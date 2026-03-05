@@ -1,0 +1,6 @@
+{
+    "appId": "com.taglyai.app",
+    "appName": "Tagly AI",
+    "webDir": "dist",
+    "bundledWebRuntime": false
+}

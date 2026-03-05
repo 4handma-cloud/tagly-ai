@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tagly AI – Real-time Hashtag Intelligence for Creators</title>
+  <meta name="description" content="Discover top trending hashtags for TikTok, Instagram, YouTube, X, LinkedIn, Facebook, Threads, Pinterest & Snapchat. AI-powered hashtag generator with real-time updates." />
+  <meta name="keywords" content="AI Hashtag Generator, Trending TikTok Tags, Instagram Hashtags, YouTube Tags, Best Hashtags 2026, Hashtag Analytics, Social Media Tool, Content Creator Tool" />
+  <meta property="og:title" content="Tagly AI – Real-time Hashtag Intelligence" />
+  <meta property="og:description" content="AI-powered trending hashtags for 9 social platforms. Updated every 15 minutes." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏷️</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">#</span>
+          <span class="logo-text">Tagly<span class="logo-accent">AI</span></span>
+        </div>
+        <div class="header-meta">
+          <div class="live-indicator" id="live-indicator">
+            <span class="live-dot"></span>
+            <span class="live-text">LIVE</span>
+          </div>
+          <button class="pro-btn" id="pro-btn">✨ Pro</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Platform Tabs -->
+    <nav class="platform-tabs" id="platform-tabs"></nav>
+
+    <!-- Search Bar -->
+    <div class="search-container" id="search-container">
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+        </svg>
+        <input type="text" id="search-input" class="search-input" placeholder="Search trending hashtags..." autocomplete="off" />
+        <label class="camera-btn" id="camera-btn" title="Image to Hashtags">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <input type="file" id="image-upload" accept="image/*" hidden />
+        </label>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="stats-bar">
+      <span class="stats-item" id="stats-count">100 hashtags</span>
+      <span class="stats-divider">•</span>
+      <span class="stats-item" id="stats-updated">Updated just now</span>
+    </div>
+
+    <!-- Hashtag List -->
+    <main class="hashtag-list-container">
+      <div class="hashtag-list" id="hashtag-list">
+        <!-- Skeleton loading -->
+        <div class="skeleton-loader" id="skeleton-loader">
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Copy Top 30 FAB -->
+    <button class="fab" id="copy-fab" title="Copy Top 30 Hashtags">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span>Copy Top 30</span>
+    </button>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span id="toast-text">Copied!</span>
+    </div>
+
+    <!-- Pro Modal -->
+    <div class="modal-overlay" id="pro-modal">
+      <div class="modal">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <div class="modal-icon">✨</div>
+        <h2 class="modal-title">Tagly AI <span class="logo-accent">Pro</span></h2>
+        <p class="modal-desc">Unlock advanced analytics, niche-specific tags, unlimited exports, and AI-powered content strategy.</p>
+        <ul class="pro-features">
+          <li>📊 Advanced Hashtag Analytics</li>
+          <li>🎯 Niche-Specific Tag Sets</li>
+          <li>📈 Performance Predictions</li>
+          <li>🤖 AI Content Strategy</li>
+          <li>♾️ Unlimited Exports</li>
+          <li>⚡ Priority Data Refresh</li>
+        </ul>
+        <button class="modal-cta">Coming Soon</button>
+      </div>
+    </div>
+
+    <!-- Image Analysis Overlay -->
+    <div class="image-overlay" id="image-overlay">
+      <div class="image-modal">
+        <button class="modal-close" id="image-modal-close">&times;</button>
+        <h3>🔍 AI Image Analysis</h3>
+        <div class="image-preview-container">
+          <img id="image-preview" class="image-preview" />
+        </div>
+        <p class="image-status" id="image-status">Analyzing image...</p>
+        <div class="image-tags" id="image-tags"></div>
+        <button class="modal-cta" id="copy-image-tags">Copy All Tags</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
