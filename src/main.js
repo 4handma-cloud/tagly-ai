@@ -22,6 +22,9 @@ let state = {
 async function init() {
     console.log('🏷️ Tagly AI initializing...');
 
+    // Setup Error Boundaries
+    initErrorBoundaries();
+
     // Render platform tabs
     const tabsContainer = document.getElementById('platform-tabs');
     renderPlatformTabs(tabsContainer, state.currentPlatform, handlePlatformChange);
@@ -38,6 +41,16 @@ async function init() {
     // Initialize image modal
     initImageModal();
 
+    // Setup Offline tracking
+    initOfflineTracking();
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(() => {
+            console.log('✅ Service Worker Registered');
+        });
+    }
+
     // Load initial data
     await loadHashtags();
 
@@ -45,6 +58,26 @@ async function init() {
     connectWebSocket();
 
     console.log('✅ Tagly AI ready');
+}
+
+// ─── Network Status Tracking ───────────────────────────
+function initOfflineTracking() {
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    // Initial check
+    updateNetworkStatus();
+}
+
+function updateNetworkStatus() {
+    const offlineToast = document.getElementById('offline-toast');
+    if (!navigator.onLine) {
+        offlineToast.style.display = 'flex';
+        // Give it a brief timeout to allow CSS transition
+        setTimeout(() => offlineToast.classList.add('show'), 10);
+    } else {
+        offlineToast.classList.remove('show');
+        setTimeout(() => offlineToast.style.display = 'none', 300);
+    }
 }
 
 // ─── Data Loading ──────────────────────────────────────
@@ -72,13 +105,25 @@ async function loadHashtags() {
         updateStats(state.hashtags.length, response.lastUpdated || new Date().toISOString(), source);
     } catch (error) {
         console.error('Failed to load hashtags:', error);
-        const container = document.getElementById('hashtag-list');
-        container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <p class="empty-state-text">Failed to load. Make sure the server is running.</p>
-      </div>
-    `;
+
+        // If offline, provide specific message
+        if (!navigator.onLine) {
+            const container = document.getElementById('hashtag-list');
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon" style="color:var(--accent-orange)">📶</div>
+                <p class="empty-state-text">You are offline and no cached data was found for this platform.</p>
+              </div>
+            `;
+        } else {
+            const container = document.getElementById('hashtag-list');
+            container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">⚠️</div>
+                <p class="empty-state-text">Failed to load. Make sure the server is running.</p>
+            </div>
+            `;
+        }
     }
 
     state.isLoading = false;
@@ -239,7 +284,7 @@ function connectWebSocket() {
     script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
     script.onload = () => {
         try {
-            const socket = window.io('http://localhost:3001', {
+            const socket = window.io('https://taglyai.onrender.com', {
                 transports: ['websocket', 'polling'],
                 reconnectionAttempts: 5,
                 reconnectionDelay: 3000,
@@ -294,6 +339,38 @@ function flashLiveIndicator() {
     setTimeout(() => {
         indicator.style.background = '';
     }, 1000);
+}
+
+// ─── Global Error Boundaries ───────────────────────────
+function initErrorBoundaries() {
+    window.onerror = function (msg, url, lineNo, columnNo, error) {
+        console.error('Crash Protection Caught Error:', msg, error);
+        showCrashUI();
+        return false;
+    };
+
+    window.addEventListener('unhandledrejection', function (event) {
+        console.error('Crash Protection Unhandled Promise:', event.reason);
+        showCrashUI();
+    });
+}
+
+function showCrashUI() {
+    const listContainer = document.getElementById('hashtag-list');
+    const skeleton = document.getElementById('skeleton-loader');
+    if (skeleton) skeleton.classList.add('hidden');
+    if (listContainer && listContainer.innerHTML.indexOf('empty-state') === -1) {
+        listContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon" style="color:#ff6b35;">💥</div>
+                <p class="empty-state-text" style="color:#ff6b35; margin-bottom: 8px;">Oops! Something went wrong.</p>
+                <p style="font-size: 12px; color: var(--text-secondary); max-width: 300px; margin: 0 auto; margin-bottom: 16px;">
+                    We trapped an unexpected error to keep the app running.
+                </p>
+                <button class="modal-cta" onclick="window.location.reload()" style="max-width: 150px; padding: 10px;">Reload App</button>
+            </div>
+        `;
+    }
 }
 
 // ─── Start ─────────────────────────────────────────────

@@ -2,11 +2,20 @@
 
 import { copyHashtag, copyMultipleTags } from '../utils/clipboard.js';
 
+let currentHashtags = [];
+let currentContainer = null;
+let currentRenderIndex = 0;
+const BATCH_SIZE = 20;
+
 export function renderHashtagList(container, hashtags) {
   const skeleton = document.getElementById('skeleton-loader');
   if (skeleton) skeleton.classList.add('hidden');
 
-  if (!hashtags || hashtags.length === 0) {
+  currentHashtags = hashtags || [];
+  currentContainer = container;
+  currentRenderIndex = 0;
+
+  if (currentHashtags.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🔍</div>
@@ -16,9 +25,44 @@ export function renderHashtagList(container, hashtags) {
     return;
   }
 
-  const html = hashtags.map((hashtag, index) => buildHashtagRow(hashtag, index)).join('');
-  container.innerHTML = html;
-  attachCopyHandlers(container);
+  container.innerHTML = '';
+  renderNextBatch();
+}
+
+function renderNextBatch() {
+  if (!currentContainer || !currentHashtags) return;
+
+  const end = Math.min(currentRenderIndex + BATCH_SIZE, currentHashtags.length);
+  const batch = currentHashtags.slice(currentRenderIndex, end);
+
+  if (batch.length === 0) return;
+
+  const tempDiv = document.createElement('div');
+  const html = batch.map((hashtag, index) => buildHashtagRow(hashtag, currentRenderIndex + index)).join('');
+  tempDiv.innerHTML = html;
+
+  const children = Array.from(tempDiv.children);
+  children.forEach(child => {
+    currentContainer.appendChild(child);
+  });
+
+  attachCopyHandlers(currentContainer);
+  currentRenderIndex = end;
+
+  // Set up observer for lazy loading
+  if (currentRenderIndex < currentHashtags.length) {
+    const lastElement = currentContainer.lastElementChild;
+    if (lastElement) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          // small delay to let scroll happen smoothly
+          setTimeout(renderNextBatch, 50);
+        }
+      }, { threshold: 0.1 });
+      observer.observe(lastElement);
+    }
+  }
 }
 
 /**
@@ -96,7 +140,7 @@ function buildHashtagRow(hashtag, index) {
   const scoreWidth = hashtag.aiScore || 0;
 
   return `
-    <div class="hashtag-row" style="animation-delay: ${delay}ms" data-tag="${hashtag.tag}">
+    <div class="hashtag-row" style="animation-delay: ${delay % 400}ms" data-tag="${hashtag.tag}">
       <span class="hashtag-rank${rankClass}">${hashtag.rank}</span>
       <div class="hashtag-info">
         <div class="hashtag-tag">${hashtag.tag}</div>
