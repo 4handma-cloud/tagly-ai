@@ -1,24 +1,61 @@
-// Hashtag List Component – Supports both regular and categorized (Magic Search) display
-
+// Hashtag List Component – Segmented homepage view + Magic Search categorized display
 import { copyToClipboard, copyMultipleTags } from '../utils/clipboard.js';
 import { trackHashtagsCopied, trackResultFeedback } from '../lib/analytics/taglyAnalytics.js';
 import { currentUser } from './Auth.js';
 
-let currentHashtags = [];
-let currentContainer = null;
-let currentRenderIndex = 0;
-const BATCH_SIZE = 20;
+async function copyHashtag(tag) {
+  await copyToClipboard(tag);
+}
+
+// Segment configuration
+const SEGMENT_CONFIG = [
+
+  {
+    id: 'seg1',
+    emoji: '🔥',
+    title: 'Blowing Up',
+    subtitle: 'Post these RIGHT NOW for max reach',
+    color: '#FF4444',
+    bgTint: 'rgba(255, 68, 68, 0.07)',
+    range: [0, 25]
+  },
+  {
+    id: 'seg2',
+    emoji: '⚡',
+    title: 'Trending Now',
+    subtitle: 'High traffic, still time to ride the wave',
+    color: '#FFB800',
+    bgTint: 'rgba(255, 184, 0, 0.07)',
+    range: [25, 50]
+  },
+  {
+    id: 'seg3',
+    emoji: '🚀',
+    title: 'Rising Fast',
+    subtitle: 'Getting hot — early mover advantage',
+    color: '#6366F1',
+    bgTint: 'rgba(99, 102, 241, 0.07)',
+    range: [50, 75]
+  },
+  {
+    id: 'seg4',
+    emoji: '💎',
+    title: 'Hidden Gems',
+    subtitle: 'Low competition, highly targeted',
+    color: '#10B981',
+    bgTint: 'rgba(16, 185, 129, 0.07)',
+    range: [75, 100]
+  }
+];
 
 export function renderHashtagList(container, hashtags) {
   const skeleton = document.getElementById('skeleton-loader');
   if (skeleton) skeleton.classList.add('hidden');
   container.style.display = '';
 
-  currentHashtags = hashtags || [];
-  currentContainer = container;
-  currentRenderIndex = 0;
+  const tags = hashtags || [];
 
-  if (currentHashtags.length === 0) {
+  if (tags.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🔍</div>
@@ -28,45 +65,83 @@ export function renderHashtagList(container, hashtags) {
     return;
   }
 
-  container.innerHTML = '';
-  renderNextBatch();
-}
+  // Build segmented HTML
+  let html = '<div class="segmented-hashtags">';
 
-function renderNextBatch() {
-  if (!currentContainer || !currentHashtags) return;
+  for (const seg of SEGMENT_CONFIG) {
+    const [start, end] = seg.range;
+    const segTags = tags.slice(start, Math.min(end, tags.length));
+    if (segTags.length === 0) continue;
 
-  const end = Math.min(currentRenderIndex + BATCH_SIZE, currentHashtags.length);
-  const batch = currentHashtags.slice(currentRenderIndex, end);
+    const tagsPillsHtml = segTags.map(h => {
+      const tagStr = h.tag || h;
+      return `<button class="seg-pill" data-tag="${tagStr}" title="Copy ${tagStr}">${tagStr}</button>`;
+    }).join('');
 
-  if (batch.length === 0) return;
+    html += `
+      <div class="segment-card" style="border-left: 3px solid ${seg.color};" data-seg="${seg.id}">
+        <div class="segment-header" style="background: ${seg.bgTint};" onclick="this.closest('.segment-card').classList.toggle('seg-collapsed')">
+          <div class="segment-title-row">
+            <span class="segment-emoji">${seg.emoji}</span>
+            <div class="segment-text">
+              <span class="segment-title" style="color: ${seg.color};">${seg.title}</span>
+              <span class="segment-subtitle">${seg.subtitle}</span>
+            </div>
+            <button class="segment-copy-all" data-seg-id="${seg.id}" title="Copy all ${seg.title} tags"
+              style="border-color: ${seg.color}40; color: ${seg.color};">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              ${segTags.length}
+            </button>
+            <span class="segment-arrow">▼</span>
+          </div>
+        </div>
+        <div class="segment-pills-wrap">${tagsPillsHtml}</div>
+      </div>
+    `;
+  }
 
-  const tempDiv = document.createElement('div');
-  const html = batch.map((hashtag, index) => buildHashtagRow(hashtag, currentRenderIndex + index)).join('');
-  tempDiv.innerHTML = html;
+  html += '</div>';
+  container.innerHTML = html;
 
-  const children = Array.from(tempDiv.children);
-  children.forEach(child => {
-    currentContainer.appendChild(child);
+  // Attach pill copy handlers
+  container.querySelectorAll('.seg-pill').forEach(pill => {
+    pill.addEventListener('click', async () => {
+      const tag = pill.getAttribute('data-tag');
+      await copyHashtag(tag);
+      pill.classList.add('seg-copied');
+      const prev = pill.textContent;
+      pill.textContent = '✓ Copied!';
+      setTimeout(() => {
+        pill.textContent = prev;
+        pill.classList.remove('seg-copied');
+      }, 1400);
+    });
   });
 
-  attachCopyHandlers(currentContainer);
-  currentRenderIndex = end;
-
-  // Set up observer for lazy loading
-  if (currentRenderIndex < currentHashtags.length) {
-    const lastElement = currentContainer.lastElementChild;
-    if (lastElement) {
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          observer.disconnect();
-          // small delay to let scroll happen smoothly
-          setTimeout(renderNextBatch, 50);
-        }
-      }, { threshold: 0.1 });
-      observer.observe(lastElement);
-    }
-  }
+  // Attach copy-all handlers
+  container.querySelectorAll('.segment-copy-all').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation(); // don't collapse header
+      const segId = btn.getAttribute('data-seg-id');
+      const seg = SEGMENT_CONFIG.find(s => s.id === segId);
+      if (!seg) return;
+      const [start, end] = seg.range;
+      const segTags = (hashtags || []).slice(start, Math.min(end, (hashtags || []).length));
+      const tagStrings = segTags.map(h => h.tag || h);
+      await copyMultipleTags(tagStrings);
+      const prev = btn.innerHTML;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 6L9 17l-5-5"/></svg> Copied!`;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = prev;
+        btn.classList.remove('copied');
+      }, 1800);
+    });
+  });
 }
+
 
 /**
  * Render categorized Magic Search results
