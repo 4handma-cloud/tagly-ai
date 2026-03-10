@@ -17,6 +17,7 @@ const COST_PER_1K_TOKENS = {
     'deepseek-r1': { input: 0.00055, output: 0.00219 },
     'gemini-flash': { input: 0, output: 0 },
     'qwen3.5-122b': { input: 0, output: 0 },
+    'qwen-2.5': { input: 0, output: 0 },
     'llama-3.3': { input: 0, output: 0 }
 };
 
@@ -107,6 +108,11 @@ async function executeDeepSeek(modelKey, prompt, systemPrompt) {
 
 async function executeQwen(modelKey, prompt, systemPrompt) {
     if (!process.env.DASHSCOPE_API_KEY) throw new Error('DashScope API Key missing');
+
+    const actualModel = (modelKey === 'qwen3.5-122b')
+        ? (process.env.QWEN_TEXT_MODEL || 'qwen3.5-122b-a10b')
+        : 'qwen2.5-72b-instruct';
+
     const response = await fetch(`${process.env.QWEN_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -114,7 +120,7 @@ async function executeQwen(modelKey, prompt, systemPrompt) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: process.env.QWEN_TEXT_MODEL,
+            model: actualModel,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }

@@ -6,17 +6,18 @@ const MAGIC_SEARCH_SEQUENCE = {
     1: 'qwen3.5-122b',
     2: 'deepseek-r1',
     3: 'gemini-flash',
-    4: 'llama-3.3',
-    5: 'qwen3.5-122b',
+    4: 'qwen3.5-122b',
+    5: 'qwen-2.5',
     6: 'gemini-flash',
     7: 'deepseek-r1',
-    8: 'qwen3.5-122b',
+    8: 'qwen-2.5',
     9: 'deepseek-r1',
     10: 'qwen3.5-122b'
 };
 
 const MODEL_DISPLAY_NAMES = {
     'qwen3.5-122b': 'Qwen 3.5 122B',
+    'qwen-2.5': 'Qwen 2.5 72B',
     'deepseek-r1': 'DeepSeek R1',
     'gemini-flash': 'Gemini Flash',
     'llama-3.3': 'Llama 3.3 70B'

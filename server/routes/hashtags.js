@@ -171,7 +171,7 @@ router.get('/hashtags/:platform/search', async (req, res) => {
 });
 
 // Free models for unregistered/guest users (rotates each request)
-const FREE_GUEST_MODELS = ['gemini-flash', 'llama-3.3', 'qwen-2.5'];
+const FREE_GUEST_MODELS = ['qwen-2.5', 'llama-3.3'];
 let guestModelIndex = 0;
 
 router.post('/hashtags/magic-search', async (req, res) => {
