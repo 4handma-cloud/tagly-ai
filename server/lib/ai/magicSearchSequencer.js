@@ -3,16 +3,16 @@ import { getTrendContext } from '../trends/trendAggregator.js';
 import { incrementMagicSearchCount } from './quotaEnforcer.js';
 
 const MAGIC_SEARCH_SEQUENCE = {
-    1: 'qwen3.5-122b',
-    2: 'deepseek-r1',
-    3: 'gemini-flash',
-    4: 'qwen3.5-122b',
-    5: 'qwen-2.5',
-    6: 'gemini-flash',
-    7: 'deepseek-r1',
-    8: 'qwen-2.5',
-    9: 'deepseek-r1',
-    10: 'qwen3.5-122b'
+    1: { model: 'qwen3.5-122b', prompt: 'magic_search_strategy' },
+    2: { model: 'deepseek-r1', prompt: 'magic_search_strategy' },
+    3: { model: 'gemini-flash', prompt: 'magic_search_spark' },
+    4: { model: 'llama-3.3', prompt: 'magic_search_flash' },
+    5: { model: 'qwen3.5-122b', prompt: 'magic_search_strategy' },
+    6: { model: 'gemini-flash', prompt: 'magic_search_spark' },
+    7: { model: 'deepseek-r1', prompt: 'magic_search_strategy' },
+    8: { model: 'qwen3.5-122b', prompt: 'magic_search_spark' },
+    9: { model: 'deepseek-r1', prompt: 'magic_search_flash' },
+    10: { model: 'qwen3.5-122b', prompt: 'magic_search_strategy' }
 };
 
 const MODEL_DISPLAY_NAMES = {
@@ -52,10 +52,20 @@ export async function routeMagicSearch(userId, platform, topic) {
     }
 
     const position = ((searchCount - 1) % 10) + 1;
-    const modelKey = MAGIC_SEARCH_SEQUENCE[position] || 'deepseek-r1';
+    const config = MAGIC_SEARCH_SEQUENCE[position] || { model: 'deepseek-r1', prompt: 'magic_search_strategy' };
+    const modelKey = config.model;
+    const promptType = config.prompt;
 
     const trendContext = await getTrendContext(platform, topic);
-    const result = await generateWithFallback(modelKey, platform, topic, 'magic_search_strategy', trendContext);
+
+    let result;
+    try {
+        result = await generateWithFallback(modelKey, platform, topic, promptType, trendContext);
+        if (!result.hashtags) throw new Error('Missing hashtags');
+    } catch (err) {
+        console.warn(`[Magic Search] ${promptType} failed on ${modelKey}, trying SPARK fallback...`);
+        result = await generateWithFallback(modelKey, platform, topic, 'magic_search_spark', trendContext);
+    }
 
     if (userId) {
         await incrementMagicSearchCount(userId);

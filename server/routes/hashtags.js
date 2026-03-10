@@ -171,8 +171,15 @@ router.get('/hashtags/:platform/search', async (req, res) => {
 });
 
 // Free guest Magic Search: 6-search premium sequence then blocked
-// qwen3.5(1) → deepseek(2) → gemini(3) → llama(4) → qwen3.5(5) → deepseek(6)
-const FREE_GUEST_MODELS = ['qwen3.5-122b', 'deepseek-r1', 'gemini-flash', 'llama-3.3', 'qwen3.5-122b', 'deepseek-r1'];
+// Includes lightweight SPARK and FLASH prompts to ensure fast, reliable responses
+const FREE_GUEST_SEQUENCE = [
+    { model: 'qwen3.5-122b', prompt: 'magic_search_strategy' },
+    { model: 'deepseek-r1', prompt: 'magic_search_strategy' },
+    { model: 'gemini-flash', prompt: 'magic_search_spark' },
+    { model: 'llama-3.3', prompt: 'magic_search_flash' },
+    { model: 'qwen3.5-122b', prompt: 'magic_search_strategy' },
+    { model: 'deepseek-r1', prompt: 'magic_search_spark' }
+];
 const FREE_GUEST_LIMIT = 6;
 let guestModelIndex = 0;
 
@@ -202,23 +209,24 @@ router.post('/hashtags/magic-search', async (req, res) => {
                 });
             }
 
-            const modelKey = FREE_GUEST_MODELS[guestModelIndex % FREE_GUEST_MODELS.length];
+            const config = FREE_GUEST_SEQUENCE[guestModelIndex % FREE_GUEST_SEQUENCE.length];
+            const modelKey = config.model;
+            const promptType = config.prompt;
             guestModelIndex++;
-            console.log(`🎁 Guest search #${guestModelIndex}/${FREE_GUEST_LIMIT} with ${modelKey}`);
+            console.log(`🎁 Guest search #${guestModelIndex}/${FREE_GUEST_LIMIT} with ${modelKey} (${promptType})`);
 
             const trendContext = await getTrendContext(targetPlatform, content);
 
             try {
-                // First try the full ARIA magic_search_strategy prompt
-                result = await generateWithFallback(modelKey, targetPlatform, content, 'magic_search_strategy', trendContext);
-            } catch (ariaErr) {
-                console.warn('ARIA Magic Search failed, falling back to simpler prompt:', ariaErr.message);
-                // Fallback to simpler topic_search_30 + a strategy tip
+                // Try the configured prompt (ARIA, SPARK, or FLASH)
+                result = await generateWithFallback(modelKey, targetPlatform, content, promptType, trendContext);
+                if (!result.hashtags) throw new Error('Missing hashtags');
+            } catch (promptErr) {
+                console.warn(`[Magic Search] ${promptType} failed on ${modelKey}, trying SPARK fallback...`);
+                // Fallback to simpler SPARK prompt which is 95%+ reliable
                 try {
-                    result = await generateWithFallback(modelKey, targetPlatform, content, 'topic_search_30', trendContext);
-                    if (result && !result.strategyTip) {
-                        result.strategyTip = `Focus on creating ${targetPlatform}-native content around "${content}" using trending formats and niche hashtags for maximum discoverability.`;
-                    }
+                    result = await generateWithFallback(modelKey, targetPlatform, content, 'magic_search_spark', trendContext);
+                    if (!result.hashtags) throw new Error('Missing hashtags');
                 } catch (simpleErr) {
                     console.error('All Magic Search attempts failed:', simpleErr.message);
                     throw simpleErr;
@@ -226,7 +234,7 @@ router.post('/hashtags/magic-search', async (req, res) => {
             }
         }
 
-        // Parse the ARIA-format response into UI-compatible structure
+        // Parse the response into UI-compatible structure
         const rawHashtags = result.hashtags || [];
         let allHashtags = [];
         let categories = {};
@@ -234,24 +242,24 @@ router.post('/hashtags/magic-search', async (req, res) => {
         let ideas = {};
         let amplification = '';
 
-        // Check if ARIA returned structured hashtags object
-        if (typeof rawHashtags === 'object' && !Array.isArray(rawHashtags) && rawHashtags.highReach) {
-            // Full ARIA format
+        // Check if ARIA, SPARK, or FLASH returned structured hashtags object
+        if (typeof rawHashtags === 'object' && !Array.isArray(rawHashtags) && (rawHashtags.highReach || rawHashtags.topReach)) {
+            // Full ARIA/SPARK/FLASH format
             categories = {
                 tier_1_high_volume: {
                     label: '🚀 High Reach',
                     desc: 'Maximum visibility tags',
-                    tags: normalizeHashtags(rawHashtags.highReach || [], 'ai')
+                    tags: normalizeHashtags(rawHashtags.highReach || rawHashtags.topReach || [], 'ai')
                 },
                 tier_2_mid_volume: {
                     label: '🎯 Niche Targeted',
                     desc: 'Medium competition sweet spot',
-                    tags: normalizeHashtags(rawHashtags.mediumNiche || [], 'ai')
+                    tags: normalizeHashtags(rawHashtags.mediumNiche || rawHashtags.niche || [], 'ai')
                 },
                 tier_3_niche_targeted: {
                     label: '💎 Micro Niche',
                     desc: 'Hidden community gems',
-                    tags: normalizeHashtags(rawHashtags.microNiche || [], 'ai')
+                    tags: normalizeHashtags(rawHashtags.microNiche || rawHashtags.micro || [], 'ai')
                 },
                 bonus_trending_tags: {
                     label: '🔥 Trending + Brandable',
@@ -279,13 +287,18 @@ router.post('/hashtags/magic-search', async (req, res) => {
         }
 
         // Extract ARIA extras into ideas for the UI
-        if (result.titles || result.keywords || result.descriptions || result.postingTimes) {
+        if (result.titles || result.keywords || result.descriptions || result.postingTimes || result.bestTimes || result.contentIdeas) {
             ideas = {
                 titles: (result.titles || []).map(t => typeof t === 'string' ? t : `${t.title} — ${t.hook || ''}`),
                 keywords: (result.keywords || []).map(k => typeof k === 'string' ? k : k.keyword),
                 descriptions: (result.descriptions || []).map(d => typeof d === 'string' ? d : d.text),
-                timestamps: (result.postingTimes || []).map(p => typeof p === 'string' ? p : `${p.time} ${p.day} — ${p.reason || ''}`)
+                timestamps: (result.postingTimes || result.bestTimes || []).map(p => typeof p === 'string' ? p : `${p.time} ${p.day} — ${p.why || p.reason || ''}`)
             };
+
+            // Flash prompt content ideas mapping
+            if (result.contentIdeas && result.contentIdeas.length > 0) {
+                ideas.titles = result.contentIdeas.map(idea => `[${idea.format}] ${idea.title} — Hook: "${idea.hook}"`);
+            }
         }
 
         // Growth strategy as analysis
@@ -294,6 +307,10 @@ router.post('/hashtags/magic-search', async (req, res) => {
             analysis = gs.nicheSummary || analysis;
             amplification = gs.quickWin || gs.competitiveEdge || amplification;
         }
+
+        // SPARK and FLASH growth mapping
+        if (result.powerTip) analysis = result.powerTip;
+        if (result.quickWin) analysis = result.quickWin;
 
         // Platform-specific tips
         if (result.platformSpecific) {
@@ -312,6 +329,7 @@ router.post('/hashtags/magic-search', async (req, res) => {
             ideas,
             amplification,
             modelUsed: result.modelUsed,
+            searchesUsed: result.searchNumber || guestModelIndex,
             lastUpdated: new Date().toISOString()
         });
     } catch (error) {

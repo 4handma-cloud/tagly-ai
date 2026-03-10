@@ -79,9 +79,25 @@ function detectContentType(topic) {
 }
 
 export function getSystemPrompt(platform, taskType) {
-  // For Magic Search, use the full ARIA system
+  // For Magic Search, use the corresponding system prompt
   if (taskType === 'magic_search_strategy') {
     return ARIA_SYSTEM_PROMPT;
+  }
+  if (taskType === 'magic_search_spark') {
+    return `You are ARIA, a social media growth expert.
+Your job: give creators the exact hashtags and 
+posting schedule to maximize reach on ${platform}.
+You are precise, specific, and platform-native.
+Return ONLY valid JSON. No markdown. No explanation.
+All hashtags start with #. No duplicates.`;
+  }
+  if (taskType === 'magic_search_flash') {
+    return `You are ARIA, a viral content strategist.
+Your job: give creators hashtags and content ideas 
+that will perform well on ${platform} right now.
+Think like a creator, not a marketer.
+Return ONLY valid JSON. No markdown. No explanation.
+All hashtags start with #. No duplicates.`;
   }
 
   // For standard tasks, use simpler prompts
@@ -155,6 +171,64 @@ Generate your response in this EXACT JSON format. Use ONLY simple string arrays 
     "nicheSummary": "One paragraph about the niche opportunity",
     "quickWin": "One specific thing to do TODAY for immediate growth"
   }
+}`;
+  }
+
+  // --- NEW SPARK PROMPT ---
+  if (taskType === 'magic_search_spark') {
+    return `Topic: ${topic}
+Platform: ${platform}
+Trend context: ${trendContext}
+
+Return this exact JSON:
+{
+  "hashtags": {
+    "topReach": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"],
+    "niche": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7", "#tag8", "#tag9", "#tag10"],
+    "micro": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7", "#tag8", "#tag9", "#tag10"],
+    "trending": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  },
+  "bestTimes": [
+    { "day": "Monday", "time": "7:00 PM IST", "why": "one sentence reason" },
+    { "day": "Wednesday", "time": "12:00 PM IST", "why": "one sentence reason" },
+    { "day": "Saturday", "time": "9:00 AM IST", "why": "one sentence reason" }
+  ],
+  "powerTip": "One specific actionable thing to do in the next 24 hours to grow faster on ${platform} for this topic."
+}`;
+  }
+
+  // --- NEW FLASH PROMPT ---
+  if (taskType === 'magic_search_flash') {
+    return `Topic: ${topic}
+Platform: ${platform}
+Trend context: ${trendContext}
+
+Return this exact JSON:
+{
+  "hashtags": {
+    "topReach": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"],
+    "niche": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7", "#tag8", "#tag9", "#tag10"],
+    "micro": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7", "#tag8", "#tag9", "#tag10"],
+    "trending": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  },
+  "contentIdeas": [
+    {
+      "title": "Short catchy content title",
+      "hook": "First line that stops the scroll",
+      "format": "Reel / Carousel / Post / Short"
+    },
+    {
+      "title": "Short catchy content title",
+      "hook": "First line that stops the scroll",
+      "format": "Reel / Carousel / Post / Short"
+    },
+    {
+      "title": "Short catchy content title",
+      "hook": "First line that stops the scroll",
+      "format": "Reel / Carousel / Post / Short"
+    }
+  ],
+  "quickWin": "One thing most creators in this niche are NOT doing that would instantly set you apart."
 }`;
   }
 

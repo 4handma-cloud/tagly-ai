@@ -460,6 +460,14 @@ async function loadMagicSearch(queryOrPayload) {
         const response = await magicSearch(payload);
 
         if (response.success && response.categories) {
+            if (response.searchesUsed !== undefined) {
+                if (currentUserProfile) {
+                    currentUserProfile.searchesUsedThisMonth = response.searchesUsed;
+                    handleProfileUpdate(currentUserProfile);
+                } else {
+                    handleProfileUpdate({ subscriptionTier: 'spark', searchesUsedThisMonth: response.searchesUsed });
+                }
+            }
             renderMagicResults(response);
 
             trackMagicSearchCompleted(
