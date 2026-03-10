@@ -4,7 +4,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_DATA_API_KEY || process.env.YOUTUBE_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
 
 /**

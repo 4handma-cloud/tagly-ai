@@ -1,6 +1,7 @@
 // Copy FAB Component – "Copy Top 30" floating action button
 
 import { copyMultipleTags } from '../utils/clipboard.js';
+import { trackHashtagsCopied } from '../lib/analytics/taglyAnalytics.js';
 
 let currentHashtags = [];
 
@@ -13,10 +14,11 @@ export function initCopyFAB() {
     if (!fab) return;
 
     fab.addEventListener('click', async () => {
-        const top30 = currentHashtags.slice(0, 30).map(h => h.tag);
+        const top30 = currentHashtags.slice(0, 30).map(h => h.tag || h);
         if (top30.length === 0) return;
 
         await copyMultipleTags(top30);
+        trackHashtagsCopied(window.currentPlatform || 'instagram', 'general', 'all');
 
         // Visual feedback
         fab.classList.add('copied');

@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // In a production app, use Custom Claims or an Admin array.
+      // For local admin testing, you might temporarily open reads or set specific admin emails.
+      // E.g., return request.auth.token.email == 'admin@tagly.ai'
+      return isAuthenticated(); 
+    }
+
+    match /tagly_users/{userId} {
+      // Allow users to read and update their own profiles
+      allow read: if isOwner(userId);
+      allow update: if isOwner(userId);
+      // Allow system to create new user profiles during auth trigger
+      allow create: if isOwner(userId);
+      
+      // TEMPORARY: Allow you to use the admin.html locally (Restrict this before launch!)
+      allow read: if true; 
+    }
+
+    match /tagly_searches/{searchId} {
+      // Allow authenticated users to log searches (create)
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId);
+    }
+
+    match /tagly_subscriptions/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

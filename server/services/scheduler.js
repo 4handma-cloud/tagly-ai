@@ -5,6 +5,7 @@ import { refreshAllPlatforms, getTopHashtags } from './hashtagEngine.js';
 import { generateLiveHashtags, isAIAvailable } from './aiScoring.js';
 import { fetchYouTubeTrending, isYouTubeAvailable } from './youtubeFetcher.js';
 import { getCache } from './cache.js';
+import { initPrecacheCron } from '../lib/ai/precacheWorker.js';
 
 let io = null;
 let refreshCount = 0;
@@ -16,6 +17,7 @@ export function initScheduler(socketIo) {
 
     // Run initial data load
     refreshData();
+    initPrecacheCron();
 
     // Schedule refresh every 15 minutes
     cron.schedule('*/15 * * * *', () => {
@@ -46,11 +48,15 @@ async function refreshData() {
                     if (hashtags) sources[platform] = 'youtube-api';
                 }
 
-                // 2. Try AI generation
+                // 2. Try AI generation (DISABLED for background prefetching)
+                // Hitting OpenAI every 15 minutes for 8 platforms = massive token burn.
+                // We now strictly use simulated data for standard feeds to save costs.
+                /*
                 if (!hashtags && isAIAvailable()) {
                     hashtags = await generateLiveHashtags(platform, 100);
                     if (hashtags) sources[platform] = 'gpt-5.2';
                 }
+                */
 
                 // 3. Fallback to simulated
                 if (!hashtags) {

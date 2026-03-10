@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const iconSrc = 'C:\\Users\\91700\\.gemini\\antigravity\\brain\\b542084b-7ef8-4002-a362-ec11b7d9ecb5\\tagly_app_icon_1772828796440.png';
-const splashSrc = 'C:\\Users\\91700\\.gemini\\antigravity\\brain\\b542084b-7ef8-4002-a362-ec11b7d9ecb5\\tagly_splash_screen_1772828813065.png';
+const iconSrc = 'C:\\Users\\91700\\.gemini\\antigravity\\brain\\ee826dfa-0490-44a7-b8e7-00a0ac76f26c\\tagly_app_icon_1772960316637.png';
+const splashSrc = 'C:\\Users\\91700\\.gemini\\antigravity\\brain\\ee826dfa-0490-44a7-b8e7-00a0ac76f26c\\tagly_splash_screen_1772960345045.png';
 
 if (!fs.existsSync('assets')) {
     fs.mkdirSync('assets', { recursive: true });

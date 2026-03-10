@@ -11,6 +11,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import hashtagRoutes from './routes/hashtags.js';
+import paymentRoutes from './routes/payments.js';
+import adminRoutes from './routes/admin.js';
+import feedbackRoutes from './routes/feedback.js';
 import { initScheduler } from './services/scheduler.js';
 import { getTopHashtags, getAllPlatforms } from './services/hashtagEngine.js';
 import { isAIAvailable } from './services/aiScoring.js';
@@ -28,6 +31,9 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3001;
 
+// Webhook route needs raw body for Stripe signature validation, so configure it before global parsers
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -35,6 +41,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api', hashtagRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Serve Static Frontend (Production Build)
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -42,6 +51,9 @@ app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (req, res) => {
     // Exclude API routes from fallback
     if (!req.path.startsWith('/api')) {
+        if (req.path === '/admin' || req.path === '/admin.html') {
+            return res.sendFile(path.join(__dirname, '../dist/admin.html'));
+        }
         res.sendFile(path.join(__dirname, '../dist/index.html'));
     }
 });

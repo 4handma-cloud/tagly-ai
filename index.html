@@ -16,11 +16,21 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@700;800&display=swap"
     rel="stylesheet" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏷️</text></svg>" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css" />
   <link rel="stylesheet" href="/src/style.css" />
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NJ4R5JDW6R"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-NJ4R5JDW6R');
+  </script>
 </head>
 
 <body>
@@ -28,16 +38,29 @@
     <!-- Header -->
     <header class="header" id="header">
       <div class="header-inner">
-        <div class="logo">
-          <span class="logo-icon">#</span>
-          <span class="logo-text">Tagly<span class="logo-accent">AI</span></span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="logo">
+            <span class="logo-icon">#</span>
+            <span class="logo-text">Tagly<span class="logo-accent">AI</span></span>
+          </div>
+          <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Light/Dark Theme"
+            style="background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; display: flex; align-items: center; justify-content: center; filter: grayscale(1); transition: transform 0.2s;">
+            🌗
+          </button>
         </div>
         <div class="header-meta">
+          <div class="limit-counter" id="limit-counter"
+            style="display:none; font-size:12px; margin-right: 15px; color: var(--text-secondary);">
+            Searches: <span id="limit-usage" style="color:var(--text-primary); font-weight:600;">0/10</span>
+          </div>
           <div class="live-indicator" id="live-indicator">
             <span class="live-dot"></span>
             <span class="live-text">LIVE</span>
           </div>
-          <button class="pro-btn" id="pro-btn">✨ Pro</button>
+          <button class="pro-btn" id="pro-btn">Login / Register</button>
+          <button class="magic-btn" id="subscribe-btn"
+            style="display: none; height: 32px; padding: 0 12px; font-size: 13px;">Subscribe</button>
+          <button class="pro-btn" id="user-btn" style="display: none;">My Account</button>
         </div>
       </div>
     </header>
@@ -47,20 +70,25 @@
 
     <!-- Search Bar -->
     <div class="search-container" id="search-container">
-      <div class="search-bar">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="search-bar" style="display:flex; gap:8px;">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          style="flex-shrink:0;">
           <circle cx="11" cy="11" r="8" />
           <path d="M21 21l-4.35-4.35" />
         </svg>
-        <input type="text" id="search-input" class="search-input" placeholder="Search trending hashtags..."
-          autocomplete="off" />
-        <label class="camera-btn" id="camera-btn" title="Image to Hashtags">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
+        <input type="text" id="search-input" class="search-input" placeholder="Keyword or topic..." autocomplete="off"
+          style="flex:1;" />
+
+        <label for="image-upload" class="camera-btn" title="Image to Hashtags"
+          style="cursor:pointer; display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:8px; background:var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-secondary); transition:all 0.2s;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
           </svg>
-          <input type="file" id="image-upload" accept="image/*" hidden />
         </label>
+        <input type="file" id="image-upload" accept="image/*" style="display:none;" />
+
+        <button class="magic-btn" id="magic-btn" title="AI Magic Search ✨" style="margin:0;">✨ Magic</button>
       </div>
     </div>
 
@@ -73,18 +101,24 @@
 
     <!-- Hashtag List -->
     <main class="hashtag-list-container">
-      <div class="hashtag-list" id="hashtag-list">
-        <!-- Skeleton loading -->
-        <div class="skeleton-loader" id="skeleton-loader">
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
-          <div class="skeleton-row"></div>
+      <!-- Skeleton loading -->
+      <div class="skeleton-loader hidden" id="skeleton-loader">
+        <div
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; margin-top: 20px;">
+          <div class="chase-wrapper" style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+            <div class="loading-status" id="loading-status" style="margin-bottom: 0;">Connecting to AI...</div>
+            <div class="running-dog" style="margin-bottom: 0;">🐕</div>
+          </div>
+          <div class="loading-tip" id="loading-tip">🐾 Sniffing out the best tags...</div>
         </div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+      <div class="hashtag-list" id="hashtag-list">
       </div>
     </main>
 
@@ -148,8 +182,306 @@
         <button class="modal-cta" id="copy-image-tags">Copy All Tags</button>
       </div>
     </div>
-  </div>
 
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal">
+      <div class="modal auth-modal">
+        <button class="modal-close" id="auth-modal-close">&times;</button>
+        <div class="modal-icon">🔐</div>
+        <h2 class="modal-title" id="auth-title">Create Account</h2>
+        <p class="modal-desc">Start our free trial plan of first month or 20 search. Unlock exclusive AI Strategy
+          Insights.
+        </p>
+
+        <div class="auth-tabs" style="display:flex; gap:10px; margin-bottom:15px;" id="auth-tabs-container">
+          <button id="tab-email" class="modal-cta"
+            style="flex:1; padding:8px; font-size:12px; background:var(--accent-light);">Email</button>
+          <button id="tab-phone" class="modal-cta auth-btn-secondary"
+            style="flex:1; padding:8px; font-size:12px; background:var(--bg-secondary); border: 1px solid var(--border-color); color:var(--text-primary);">Phone</button>
+        </div>
+
+        <!-- Phone Form -->
+        <div class="auth-form" id="auth-phone-form" style="display:none;">
+          <div id="phone-step-1">
+            <div style="margin-bottom: 20px;">
+              <input type="tel" id="auth-phone-number" class="auth-input"
+                style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); border-radius: 8px; padding-left: 55px;"
+                required />
+            </div>
+            <button class="modal-cta" id="auth-send-code-btn">Generate OTP</button>
+          </div>
+          <div id="phone-step-2" style="display:none;">
+            <input type="text" id="auth-sms-code" class="auth-input" placeholder="6-digit verification code" required />
+            <div
+              style="display:flex; justify-content:space-between; margin-bottom:12px; margin-top:8px; padding:0 4px;">
+              <button id="auth-resend-btn"
+                style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:12px; padding:0;"
+                disabled>Resend in 30s</button>
+              <button id="auth-change-number-btn"
+                style="background:none; border:none; color:var(--accent-light); cursor:pointer; font-size:12px; padding:0;">Change
+                Number</button>
+            </div>
+            <button class="modal-cta" id="auth-verify-code-btn">Verify OTP</button>
+          </div>
+        </div>
+
+        <!-- Email Form -->
+        <div class="auth-form" id="auth-form">
+          <input type="email" id="auth-email" class="auth-input" placeholder="Email Address" required />
+          <input type="password" id="auth-password" class="auth-input" placeholder="Password (min 6 chars)" required />
+
+          <div id="auth-error-msg" class="auth-error"
+            style="display: none; color: #ff6b35; font-size: 11px; margin-top: 4px;"></div>
+
+          <button class="modal-cta" id="auth-submit-btn">Register with Email</button>
+
+          <div class="auth-divider">
+            <div class="auth-divider-line"></div>
+            <span class="auth-divider-text">OR</span>
+            <div class="auth-divider-line"></div>
+          </div>
+
+          <button class="modal-cta auth-google-btn" id="auth-google-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" style="margin-right:8px;">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4" />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853" />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05" />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335" />
+            </svg>
+            Continue with Google
+          </button>
+
+          <p class="auth-switch-text">
+            <span id="auth-prompt">Already have an account?</span>
+            <span class="auth-switch-link" id="auth-switch-link"
+              style="color:var(--accent-light); cursor:pointer;">Login</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Magic Search Modal -->
+    <div class="modal-overlay" id="magic-modal">
+      <div class="modal">
+        <button class="modal-close" id="magic-modal-close">&times;</button>
+        <div class="modal-icon">✨</div>
+        <h2 class="modal-title">Magic <span class="logo-accent">Search</span></h2>
+        <p class="modal-desc">Provide context to generate a highly targeted 3-tier hashtag strategy.</p>
+
+        <div class="magic-form">
+          <textarea id="magic-desc" placeholder="Describe your content in detail..." rows="3"></textarea>
+
+          <div class="form-row">
+            <select id="magic-platform">
+              <option value="youtube">YouTube</option>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="threads">Threads</option>
+              <option value="x">Twitter / X</option>
+              <option value="facebook">Facebook</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="pinterest">Pinterest</option>
+              <option value="snapchat">Snapchat</option>
+            </select>
+            <select id="magic-format">
+              <option value="">Any Format</option>
+              <option value="Reel / Short Video">Reel / Short Video</option>
+              <option value="Static Post">Static Post</option>
+              <option value="Carousel">Carousel</option>
+              <option value="Story">Story</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <select id="magic-audience">
+              <option value="">Broad Audience</option>
+              <option value="Gen Z (16-24)">Gen Z (16-24)</option>
+              <option value="Millennials">Millennials</option>
+              <option value="Professionals/B2B">Professionals/B2B</option>
+              <option value="Entrepreneurs">Entrepreneurs</option>
+              <option value="Fitness/Health">Fitness/Health</option>
+            </select>
+            <select id="magic-tone">
+              <option value="">Any Tone</option>
+              <option value="Educational">Educational</option>
+              <option value="Inspirational">Inspirational</option>
+              <option value="Humorous">Humorous</option>
+              <option value="Aesthetic">Aesthetic</option>
+            </select>
+          </div>
+
+          <button class="modal-cta" id="magic-submit-btn">Generate Strategy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing / Waitlist Modal -->
+    <div class="modal-overlay" id="pricing-modal">
+      <div class="modal" style="max-width: 900px; padding: 30px;">
+        <button class="modal-close" id="pricing-modal-close">&times;</button>
+
+        <div
+          style="background: linear-gradient(135deg, var(--accent), #6366f1); padding: 12px; border-radius: 8px; margin-bottom: 24px;">
+          <p style="margin: 0; font-size: 15px; font-weight: 600; color: white;">All plans are FREE during our launch
+            period — upgrade to lock in your tier</p>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;"
+          id="currency-toggle-container">
+          <button class="pro-btn currency-toggle active" data-currency="INR"
+            style="background: var(--accent);">INR</button>
+          <button class="pro-btn currency-toggle" data-currency="AED"
+            style="background: var(--bg-elevated); color: var(--text-primary);">AED</button>
+          <button class="pro-btn currency-toggle" data-currency="USD"
+            style="background: var(--bg-elevated); color: var(--text-primary);">USD</button>
+        </div>
+
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; text-align: left;">
+          <!-- SPARK -->
+          <div class="pricing-card"
+            style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column;">
+            <h3 style="font-size: 18px; margin-bottom: 8px;">SPARK</h3>
+            <p style="font-size: 24px; font-weight: 700; margin-bottom: 16px;">Free</p>
+            <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px;">
+              <li>10 searches/month</li>
+              <li>15 hashtags</li>
+              <li>Instagram & TikTok only</li>
+            </ul>
+            <button class="modal-cta"
+              style="margin-top:auto; background: var(--bg-elevated); color: var(--text-tertiary);" disabled>Current
+              Plan</button>
+          </div>
+
+          <!-- CREATOR -->
+          <div class="pricing-card"
+            style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column;">
+            <h3 style="font-size: 18px; margin-bottom: 8px; color: #22c55e;">CREATOR</h3>
+            <p class="price-display" data-inr="49" data-aed="2.20" data-usd="0.60"
+              style="font-size: 24px; font-weight: 700; margin-bottom: 16px;">₹49/mo</p>
+            <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px;">
+              <li>100 searches/month</li>
+              <li>30 hashtags</li>
+              <li>All platforms</li>
+              <li>Trending suggestions</li>
+            </ul>
+            <button class="modal-cta upgrade-btn" data-tier="creator" style="margin-top:auto;">Join Waitlist</button>
+          </div>
+
+          <!-- GROWTH -->
+          <div class="pricing-card"
+            style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; position: relative;">
+            <div
+              style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 10px; text-transform: uppercase;">
+              Most Popular</div>
+            <h3 style="font-size: 18px; margin-bottom: 8px; color: #3b82f6;">GROWTH</h3>
+            <p class="price-display" data-inr="149" data-aed="6.80" data-usd="1.85"
+              style="font-size: 24px; font-weight: 700; margin-bottom: 16px;">₹149/mo</p>
+            <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px;">
+              <li>500 searches/month</li>
+              <li>50 hashtags</li>
+              <li>AI scoring</li>
+              <li>Competitor analysis</li>
+              <li>Custom alerts</li>
+            </ul>
+            <button class="modal-cta upgrade-btn" data-tier="growth" style="margin-top:auto;">Join Waitlist</button>
+          </div>
+
+          <!-- AGENCY -->
+          <div class="pricing-card"
+            style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column;">
+            <h3 style="font-size: 18px; margin-bottom: 8px; color: #a855f7;">AGENCY</h3>
+            <p class="price-display" data-inr="399" data-aed="18.00" data-usd="4.90"
+              style="font-size: 24px; font-weight: 700; margin-bottom: 16px;">₹399/mo</p>
+            <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px;">
+              <li>Unlimited searches</li>
+              <li>100 hashtags</li>
+              <li>White-label reports</li>
+              <li>Team access</li>
+              <li>API access</li>
+            </ul>
+            <button class="modal-cta upgrade-btn" data-tier="agency" style="margin-top:auto;">Join Waitlist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profile-modal">
+      <div class="modal auth-modal" style="max-height: 90vh; overflow-y: auto;">
+        <button class="modal-close" id="profile-modal-close">&times;</button>
+        <div class="modal-icon">👤</div>
+        <h2 class="modal-title">My Profile</h2>
+        <p class="modal-desc" id="profile-desc">Manage your account and settings.</p>
+
+        <div class="auth-form" style="display:block;">
+          <!-- Name Change -->
+          <div style="margin-bottom: 12px; text-align: left;">
+            <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Display
+              Name</label>
+            <input type="text" id="profile-name" class="auth-input" placeholder="Display Name" />
+            <button class="modal-cta" id="profile-save-btn">Update Name</button>
+          </div>
+
+          <!-- Password Change -->
+          <div style="margin-bottom: 16px; text-align: left;">
+            <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Update
+              Password</label>
+            <input type="password" id="profile-new-password" class="auth-input"
+              placeholder="New Password (min 6 chars)" />
+            <div id="profile-password-msg" style="font-size: 11px; display: none; margin-top: 4px;"></div>
+            <button class="modal-cta auth-btn-secondary" id="profile-password-btn"
+              style="background:var(--bg-secondary); border: 1px solid var(--border-color); color:var(--text-primary); margin-top: 8px;">Change
+              Password</button>
+          </div>
+
+          <div class="auth-divider">
+            <div class="auth-divider-line"></div>
+          </div>
+
+          <!-- Search History -->
+          <div style="margin-bottom: 16px; text-align: left;">
+            <h3 style="font-size: 14px; margin-bottom: 8px;">Recent Search History</h3>
+            <div id="profile-history-list"
+              style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+              <!-- Render history here -->
+            </div>
+            <div id="profile-history-upgrade"
+              style="display: none; padding: 12px; background: rgba(116, 59, 235, 0.1); border: 1px solid var(--accent); border-radius: 8px; margin-top: 12px; text-align: center;">
+              <p style="margin-bottom: 8px; color: var(--accent-light);">Unlock your full search history and analytics.
+              </p>
+              <button class="modal-cta upgrade-btn" data-tier="creator" style="font-size: 12px; padding: 6px;"
+                onclick="document.getElementById('profile-modal').classList.remove('visible'); window.location.hash='#pricing'">Subscribe
+                Now</button>
+            </div>
+            <div id="profile-history-pagination" style="display: none; margin-top: 12px; text-align: center;">
+              <button class="modal-cta" id="profile-history-next-btn"
+                style="background:var(--bg-secondary); border: 1px solid var(--border-color); color:var(--text-primary); font-size: 12px; padding: 6px;">Load
+                Older Searches</button>
+            </div>
+          </div>
+
+          <div class="auth-divider">
+            <div class="auth-divider-line"></div>
+          </div>
+
+          <button class="modal-cta" id="profile-signout-btn"
+            style="background:var(--bg-elevated); color:var(--text-primary); border:1px solid var(--border-color);">Sign
+            Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="recaptcha-invisible" style="position: relative; z-index: 9999;"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js"></script>
   <script type="module" src="/src/main.js"></script>
 </body>
 

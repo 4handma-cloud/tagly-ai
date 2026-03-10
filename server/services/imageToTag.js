@@ -1,12 +1,9 @@
 // Image-to-Tag Service – GPT-5.2 Vision powered image analysis
 
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const client = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
+const client = null; // OpenAI dormant in V3
 
 /**
  * Analyze an image and generate 30 relevant trending hashtags

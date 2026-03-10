@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tagly AI – Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        body {
+            padding: 40px;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .admin-table th {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .admin-login {
+            max-width: 400px;
+            margin: 100px auto;
+            text-align: center;
+        }
+
+        #admin-content {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="admin-login" class="admin-login">
+        <h2>Admin Access</h2>
+        <input type="password" id="admin-pwd" class="auth-input" placeholder="Password" style="margin-top:20px;" />
+        <button id="admin-login-btn" class="modal-cta">Login</button>
+        <p id="admin-error" style="color:var(--hot-color); margin-top:10px; display:none;">Invalid Access</p>
+    </div>
+
+    <div id="admin-content">
+        <h2>Tagly AI Admin Dashboard</h2>
+        <p>Total Users: <span id="total-users">0</span></p>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Display Name</th>
+                    <th>Tier</th>
+                    <th>Searches This Month</th>
+                    <th>Launch Mode</th>
+                    <th>Joined</th>
+                </tr>
+            </thead>
+            <tbody id="admin-tbody">
+                <!-- Rows injected here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module" src="/src/admin.js"></script>
+</body>
+
+</html>
