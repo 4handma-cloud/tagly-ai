@@ -1,7 +1,7 @@
 import express from 'express';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import admin from 'firebase-admin';
+import admin from '../lib/firebaseAdmin.js';
 
 dotenv.config();
 
@@ -10,14 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2023-10-16' // use a stable version
 });
 
-// Init Firebase Admin (Requires GOOGLE_APPLICATION_CREDENTIALS or Firebase deploy)
-try {
-    if (!admin.apps.length) {
-        admin.initializeApp();
-    }
-} catch (error) {
-    console.warn('⚠️ Firebase Admin initialization failed. Ensure GOOGLE_APPLICATION_CREDENTIALS is set for webhooks.');
-}
+// Firebase Admin is now handled by the import above.
 
 const tierMappping = {
     creator: { USD: 0.60, AED: 2.20 },

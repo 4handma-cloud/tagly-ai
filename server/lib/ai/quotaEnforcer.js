@@ -1,25 +1,10 @@
 // Quota Enforcer – tracks Magic Search usage per user
-// Skips enforcement if Firebase Admin isn't initialized (local dev)
+import admin, { db } from '../firebaseAdmin.js';
 
 export async function quotaEnforcerMiddleware(req, res, next) {
     try {
         const userId = req.user?.uid;
-        // If no auth middleware is present, skip enforcement and allow
-        if (!userId) {
-            return next();
-        }
-
-        let db = null;
-        try {
-            const adminModule = await import('firebase-admin');
-            const admin = adminModule.default;
-            if (admin.apps && admin.apps.length > 0) {
-                db = admin.firestore();
-            }
-        } catch { }
-
-        // If Firebase isn't initialized, fail open (allow request)
-        if (!db) return next();
+        if (!userId || !db) return next();
 
         const userDocRef = db.collection('users').doc(userId);
         const user = await userDocRef.get();
@@ -49,12 +34,8 @@ export async function quotaEnforcerMiddleware(req, res, next) {
 }
 
 export async function incrementMagicSearchCount(userId) {
-    if (!userId) return;
+    if (!userId || !db) return;
     try {
-        const adminModule = await import('firebase-admin');
-        const admin = adminModule.default;
-        if (!admin.apps || admin.apps.length === 0) return;
-        const db = admin.firestore();
         await db.collection('users').doc(userId).set({
             magicSearchesUsedThisMonth: admin.firestore.FieldValue.increment(1),
             magicSearchResetDate: admin.firestore.FieldValue.serverTimestamp()

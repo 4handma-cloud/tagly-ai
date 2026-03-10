@@ -55,7 +55,11 @@ This document tracks all planned, ongoing, and completed tasks for the Tagly AI 
 
 ### 🟢 Low (Polish & Optimization)  
 - [x] **Test each model individually** → All live! (Qwen 122B + DeepSeek R1 + Groq)
+- [x] **Firebase Admin & Persistent Cache** → Shared initialization and Firestore caching logic implemented.
 - [ ] **Deploy updated `.env` to Render** → Add all new keys to Render Environment Variables dashboard
 - [ ] **Rebuild Android APK/AAB** → Run `npm run build` then Capacitor sync + Android Studio build
 - [x] **Monitor costs for first 48 hours** → Cost tracker in Firebase active
+- [x] **Firebase Auth Middleware** → Backend now verifies user identity for premium features.
+- [x] **Frontend ID Token Injection** → API client now sends tokens for Magic Search and Vision.
+
 

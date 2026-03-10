@@ -1,5 +1,4 @@
 // Tagly AI – Express + Socket.io Server
-
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -17,6 +16,7 @@ import feedbackRoutes from './routes/feedback.js';
 import { initScheduler } from './services/scheduler.js';
 import { getTopHashtags, getAllPlatforms } from './services/hashtagEngine.js';
 import { isAIAvailable } from './services/aiScoring.js';
+import { firebaseAuthMiddleware } from './lib/authMiddleware.js';
 
 dotenv.config();
 
@@ -24,20 +24,21 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: ['http://localhost:5173', 'http://localhost:3000'],
+        origin: ['http://localhost:5173', 'http://localhost:3000', 'https://taglyai.onrender.com'],
         methods: ['GET', 'POST']
     }
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Webhook route needs raw body for Stripe signature validation, so configure it before global parsers
+// Webhook route needs raw body for Stripe signature validation
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(firebaseAuthMiddleware); // Add Auth Context to all API requests
 
 // API Routes
 app.use('/api', hashtagRoutes);
@@ -49,7 +50,6 @@ app.use('/api/feedback', feedbackRoutes);
 app.use(express.static(path.join(__dirname, '../dist')));
 
 app.get('*', (req, res) => {
-    // Exclude API routes from fallback
     if (!req.path.startsWith('/api')) {
         if (req.path === '/admin' || req.path === '/admin.html') {
             return res.sendFile(path.join(__dirname, '../dist/admin.html'));
@@ -61,8 +61,6 @@ app.get('*', (req, res) => {
 // WebSocket Connections
 io.on('connection', (socket) => {
     console.log(`🔌 Client connected: ${socket.id}`);
-
-    // Send current data immediately on connect
     socket.emit('connected', {
         message: 'Connected to Tagly AI',
         platforms: getAllPlatforms(),
@@ -70,7 +68,6 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString()
     });
 
-    // Handle platform subscription
     socket.on('subscribe:platform', (platform) => {
         const hashtags = getTopHashtags(platform);
         socket.emit('hashtags:data', {
