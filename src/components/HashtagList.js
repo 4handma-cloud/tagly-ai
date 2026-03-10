@@ -7,9 +7,8 @@ async function copyHashtag(tag) {
   await copyToClipboard(tag);
 }
 
-// Segment configuration
+// Segment configuration — 12 tags per section (4 cols × 3 rows = 48 total)
 const SEGMENT_CONFIG = [
-
   {
     id: 'seg1',
     emoji: '🔥',
@@ -17,7 +16,7 @@ const SEGMENT_CONFIG = [
     subtitle: 'Post these RIGHT NOW for max reach',
     color: '#FF4444',
     bgTint: 'rgba(255, 68, 68, 0.07)',
-    range: [0, 25]
+    range: [0, 12]
   },
   {
     id: 'seg2',
@@ -26,7 +25,7 @@ const SEGMENT_CONFIG = [
     subtitle: 'High traffic, still time to ride the wave',
     color: '#FFB800',
     bgTint: 'rgba(255, 184, 0, 0.07)',
-    range: [25, 50]
+    range: [12, 24]
   },
   {
     id: 'seg3',
@@ -35,7 +34,7 @@ const SEGMENT_CONFIG = [
     subtitle: 'Getting hot — early mover advantage',
     color: '#6366F1',
     bgTint: 'rgba(99, 102, 241, 0.07)',
-    range: [50, 75]
+    range: [24, 36]
   },
   {
     id: 'seg4',
@@ -44,7 +43,7 @@ const SEGMENT_CONFIG = [
     subtitle: 'Low competition, highly targeted',
     color: '#10B981',
     bgTint: 'rgba(16, 185, 129, 0.07)',
-    range: [75, 100]
+    range: [36, 48]
   }
 ];
 
@@ -65,7 +64,7 @@ export function renderHashtagList(container, hashtags) {
     return;
   }
 
-  // Build segmented HTML
+  // Build segmented HTML — 4-col × 3-row grid per segment
   let html = '<div class="segmented-hashtags">';
 
   for (const seg of SEGMENT_CONFIG) {
@@ -75,7 +74,15 @@ export function renderHashtagList(container, hashtags) {
 
     const tagsPillsHtml = segTags.map(h => {
       const tagStr = h.tag || h;
-      return `<button class="seg-pill" data-tag="${tagStr}" title="Copy ${tagStr}">${tagStr}</button>`;
+      return `
+        <div class="seg-pill-row">
+          <span class="seg-pill-text">${tagStr}</span>
+          <button class="seg-copy-btn" data-tag="${tagStr}" title="Copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+        </div>`;
     }).join('');
 
     html += `
@@ -105,17 +112,17 @@ export function renderHashtagList(container, hashtags) {
   html += '</div>';
   container.innerHTML = html;
 
-  // Attach pill copy handlers
-  container.querySelectorAll('.seg-pill').forEach(pill => {
-    pill.addEventListener('click', async () => {
-      const tag = pill.getAttribute('data-tag');
+  // Attach individual copy-button handlers
+  container.querySelectorAll('.seg-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tag = btn.getAttribute('data-tag');
       await copyHashtag(tag);
-      pill.classList.add('seg-copied');
-      const prev = pill.textContent;
-      pill.textContent = '✓ Copied!';
+      btn.classList.add('seg-btn-copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20 6L9 17l-5-5"/></svg>';
       setTimeout(() => {
-        pill.textContent = prev;
-        pill.classList.remove('seg-copied');
+        btn.classList.remove('seg-btn-copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
       }, 1400);
     });
   });
@@ -236,7 +243,7 @@ export function renderCategorizedHashtags(container, categories, analysis, ideas
           <div class="lock-icon">🔒</div>
           <div class="lock-title">Login to Unlock Full Strategy</div>
           <div class="lock-desc">
-            Create a free account to get 10 Magic Searches per month with full access to keywords, titles, descriptions, posting times, and growth strategy.
+            Create a free account to get 6 Magic Searches per month with full access to keywords, titles, descriptions, posting times, and growth strategy.
           </div>
           <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
             <button class="modal-cta lock-btn">Login / Register</button>
@@ -264,7 +271,7 @@ export function renderCategorizedHashtags(container, categories, analysis, ideas
           <div class="lock-icon">🔒</div>
           <div class="lock-title">Login to Unlock Full Strategy</div>
           <div class="lock-desc">
-            Create a free account to get 10 Magic Searches per month with full access to keywords, titles, descriptions, posting times, and growth strategy.
+            Create a free account to get 6 Magic Searches per month with full access to keywords, titles, descriptions, posting times, and growth strategy.
           </div>
           <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
             <button class="modal-cta lock-btn">Login / Register</button>

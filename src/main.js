@@ -159,11 +159,11 @@ function handleProfileUpdate(profile) {
         counterDiv.style.alignItems = 'center';
         counterDiv.style.gap = '8px';
 
-        const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+        const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
         const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
-        const tierLabels = { spark: 'FREE', creator: '⭐ CREATOR', growth: '🚀 GROWTH', agency: '🏢 AGENCY' };
+        const tierLabels = { spark: 'TRIAL', creator: '⭐ CREATOR', growth: '🚀 GROWTH', agency: '🏢 AGENCY' };
         const tier = profile.subscriptionTier || 'spark';
-        const maxLimit = limits[tier] ?? 10;
+        const maxLimit = limits[tier] ?? 6;
         const used = profile.searchesUsedThisMonth || 0;
         const tierColor = tierColors[tier] || '#9ca3af';
         const tierLabel = tierLabels[tier] || 'FREE';
@@ -202,9 +202,9 @@ function handleProfileUpdate(profile) {
 
 function canSearch() {
     if (currentUserProfile) {
-        const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+        const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
         const tier = currentUserProfile.subscriptionTier || 'spark';
-        const limit = limits[tier] ?? 10;
+        const limit = limits[tier] ?? 6;
         const used = currentUserProfile.searchesUsedThisMonth || 0;
         if (limit !== Infinity && used >= limit && !currentUserProfile.launchMode) {
             showUpgradePrompt();
