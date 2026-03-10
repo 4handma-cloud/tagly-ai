@@ -170,8 +170,10 @@ router.get('/hashtags/:platform/search', async (req, res) => {
     }
 });
 
-// Free models for unregistered/guest users (rotates each request)
-const FREE_GUEST_MODELS = ['qwen-2.5', 'llama-3.3'];
+// Free guest Magic Search: 6-search premium sequence then blocked
+// qwen3.5(1) → deepseek(2) → gemini(3) → llama(4) → qwen3.5(5) → deepseek(6)
+const FREE_GUEST_MODELS = ['qwen3.5-122b', 'deepseek-r1', 'gemini-flash', 'llama-3.3', 'qwen3.5-122b', 'deepseek-r1'];
+const FREE_GUEST_LIMIT = 6;
 let guestModelIndex = 0;
 
 router.post('/hashtags/magic-search', async (req, res) => {
@@ -190,9 +192,19 @@ router.post('/hashtags/magic-search', async (req, res) => {
                 return res.status(403).json(result);
             }
         } else {
-            // Guest/unregistered user — use free models alternately
+            // Guest user — 6 free premium searches, then blocked
+            if (guestModelIndex >= FREE_GUEST_LIMIT) {
+                return res.status(403).json({
+                    blocked: true,
+                    showUpgradeModal: true,
+                    error: 'GUEST_LIMIT_REACHED',
+                    message: 'You have used all 6 free Magic Searches. Create a free account to get 10 more!'
+                });
+            }
+
             const modelKey = FREE_GUEST_MODELS[guestModelIndex % FREE_GUEST_MODELS.length];
             guestModelIndex++;
+            console.log(`🎁 Guest search #${guestModelIndex}/${FREE_GUEST_LIMIT} with ${modelKey}`);
 
             const trendContext = await getTrendContext(targetPlatform, content);
 

@@ -1,10 +1,9 @@
-// Scheduler – 15-minute cron job with YouTube API + AI-powered refresh
-
+// Scheduler – Persistent 4-hour cron with YouTube API refresh
 import cron from 'node-cron';
-import { refreshAllPlatforms, getTopHashtags } from './hashtagEngine.js';
-import { generateLiveHashtags, isAIAvailable } from './aiScoring.js';
+import { getTopHashtags } from './hashtagEngine.js';
+import { isAIAvailable } from './aiScoring.js';
 import { fetchYouTubeTrending, isYouTubeAvailable } from './youtubeFetcher.js';
-import { getCache } from './cache.js';
+import { getCache, currentSlot } from '../lib/ai/cacheManager.js';   // ← SAME cache as routes
 import { initPrecacheCron } from '../lib/ai/precacheWorker.js';
 
 let io = null;
@@ -15,67 +14,74 @@ const ALL_PLATFORMS = ['youtube', 'instagram', 'facebook', 'tiktok', 'threads', 
 export function initScheduler(socketIo) {
     io = socketIo;
 
-    // Run initial data load
-    refreshData();
+    // Run initial data load (skips if Firestore cache already warm)
+    refreshData(false);
     initPrecacheCron();
 
-    // Schedule refresh every 15 minutes
-    cron.schedule('*/15 * * * *', () => {
-        console.log('🔄 Scheduled refresh triggered');
-        refreshData();
+    // Re-check every 4 hours (aligns with cache slot)
+    // Only generates if cache is MISSING — never overwrites fresh cache
+    cron.schedule('0 0,4,8,12,16,20 * * *', () => {
+        console.log('⏰ 4-hour slot refresh triggered');
+        refreshData(false);
     });
 
-    console.log('⏰ Scheduler initialized – refreshing every 15 minutes');
-    console.log(`🤖 AI Mode: ${isAIAvailable() ? 'GPT-5.2 (LIVE DATA)' : 'Simulated Data'}`);
+    console.log('⏰ Scheduler initialized – refreshing every 4 hours (slot-based)');
     console.log(`▶️ YouTube: ${isYouTubeAvailable() ? 'API Connected (LIVE)' : 'Not configured'}`);
 }
 
-async function refreshData() {
+async function refreshData(force = false) {
     try {
         refreshCount++;
-        const cache = getCache();
+        const cache = await getCache();
+        const slot = currentSlot();
         const sources = {};
 
-        console.log(`\n🔄 Refresh #${refreshCount} starting...`);
+        console.log(`\n🔄 Refresh #${refreshCount} starting (Slot: ${slot})...`);
 
         for (const platform of ALL_PLATFORMS) {
             try {
+                const cacheKey = `${platform}_top100_slot${slot}`;   // ← same key as routes!
+
+                // Check if cache is already warm — skip generation if fresh
+                if (!force) {
+                    const cached = await cache.get(cacheKey);
+                    if (cached?.hashtags?.length > 0) {
+                        console.log(`  ✅ ${platform}: cache warm (${cached.hashtags.length} tags from slot ${slot})`);
+                        sources[platform] = 'cached';
+                        continue;  // do NOT regenerate!
+                    }
+                }
+
                 let hashtags = null;
 
-                // 1. Try platform-specific live API
+                // YouTube – live API
                 if (platform === 'youtube' && isYouTubeAvailable()) {
                     hashtags = await fetchYouTubeTrending(100);
                     if (hashtags) sources[platform] = 'youtube-api';
                 }
 
-                // 2. Try AI generation (DISABLED for background prefetching)
-                // Hitting OpenAI every 15 minutes for 8 platforms = massive token burn.
-                // We now strictly use simulated data for standard feeds to save costs.
-                /*
-                if (!hashtags && isAIAvailable()) {
-                    hashtags = await generateLiveHashtags(platform, 100);
-                    if (hashtags) sources[platform] = 'gpt-5.2';
-                }
-                */
-
-                // 3. Fallback to simulated
-                if (!hashtags) {
+                // All other platforms – simulated (AI is handled on-demand per request)
+                if (!hashtags || hashtags.length === 0) {
                     hashtags = getTopHashtags(platform, 100);
                     sources[platform] = 'simulated';
                 }
 
-                await cache.set(`hashtags:${platform}:100`, hashtags, 900);
-                const icon = sources[platform] === 'youtube-api' ? '▶️' : sources[platform] === 'gpt-5.2' ? '🤖' : '📦';
-                console.log(`  ${icon} ${platform}: ${hashtags.length} hashtags (${sources[platform]})`);
+                // Write to unified Firestore cache with 4-hour TTL
+                await cache.set(cacheKey, { hashtags }, 4);
+                const icon = sources[platform] === 'youtube-api' ? '▶️' : '📦';
+                console.log(`  ${icon} ${platform}: ${hashtags.length} hashtags stored (${sources[platform]})`);
+
             } catch (err) {
                 console.error(`  ❌ ${platform}: ${err.message}`);
+                // Write simulated fallback
                 const fallback = getTopHashtags(platform, 100);
-                await cache.set(`hashtags:${platform}:100`, fallback, 900);
-                sources[platform] = 'simulated';
+                const cacheKey = `${platform}_top100_slot${slot}`;
+                await cache.set(cacheKey, { hashtags: fallback }, 4);
+                sources[platform] = 'simulated-fallback';
             }
         }
 
-        // Broadcast to all connected WebSocket clients
+        // Broadcast to WebSocket clients
         if (io) {
             io.emit('hashtags:updated', {
                 timestamp: new Date().toISOString(),
