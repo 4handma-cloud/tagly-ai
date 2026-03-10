@@ -64,7 +64,7 @@ export function renderHashtagList(container, hashtags) {
     return;
   }
 
-  // Build segmented HTML — 4-col × 3-row grid per segment
+  // Build segmented HTML — 3-col × 4-row grid per segment
   let html = '<div class="segmented-hashtags">';
 
   for (const seg of SEGMENT_CONFIG) {
@@ -78,7 +78,7 @@ export function renderHashtagList(container, hashtags) {
         <div class="seg-pill-row">
           <span class="seg-pill-text">${tagStr}</span>
           <button class="seg-copy-btn" data-tag="${tagStr}" title="Copy">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
               <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
@@ -119,10 +119,10 @@ export function renderHashtagList(container, hashtags) {
       const tag = btn.getAttribute('data-tag');
       await copyHashtag(tag);
       btn.classList.add('seg-btn-copied');
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20 6L9 17l-5-5"/></svg>';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M20 6L9 17l-5-5"/></svg>';
       setTimeout(() => {
         btn.classList.remove('seg-btn-copied');
-        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
       }, 1400);
     });
   });
