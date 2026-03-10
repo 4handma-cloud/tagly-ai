@@ -214,21 +214,58 @@ function canSearch() {
     return true;
 }
 
-async function logSearch(query, platform, tagsArray) {
+// History slot limits per tier
+const HISTORY_LIMITS = { spark: 5, creator: 20, growth: 50, agency: 100 };
+
+async function logSearch(query, platform, tagsArray, fullMagicResponse = null) {
     if (!currentUser) return;
+    const tier = currentUserProfile?.subscriptionTier || 'spark';
+    const historyLimit = HISTORY_LIMITS[tier] || 5;
+
     try {
-        await addDoc(collection(db, 'tagly_searches'), {
+        // Save with full magic search result so history can replay it
+        const record = {
             userId: currentUser.uid,
             query: query || '',
             platform: platform,
-            results: tagsArray,
+            results: tagsArray.slice(0, 20), // top tags only for preview
+            isMagic: !!fullMagicResponse,
             timestamp: new Date().toISOString()
-        });
+        };
+
+        if (fullMagicResponse) {
+            record.categories = fullMagicResponse.categories || null;
+            record.analysis = fullMagicResponse.analysis || '';
+            record.ideas = fullMagicResponse.ideas || null;
+            record.amplification = fullMagicResponse.amplification || '';
+        }
+
+        await addDoc(collection(db, 'tagly_searches'), record);
+
+        // Enforce history limit: delete oldest documents beyond tier limit
+        // (async, non-blocking — best effort)
+        const { getDocs, query: fsQuery, where, orderBy, limit: fsLimit, deleteDoc } = await import('firebase/firestore');
+        const oldest = await getDocs(
+            fsQuery(
+                collection(db, 'tagly_searches'),
+                where('userId', '==', currentUser.uid),
+                orderBy('timestamp', 'asc'),
+                fsLimit(1)
+            )
+        );
+        const total = (await getDocs(
+            fsQuery(collection(db, 'tagly_searches'), where('userId', '==', currentUser.uid))
+        )).size;
+        if (total > historyLimit) {
+            oldest.forEach(d => deleteDoc(d.ref));
+        }
+
+        // Increment monthly search counter
         await updateDoc(doc(db, 'tagly_users', currentUser.uid), {
             searchesUsedThisMonth: increment(1)
         });
     } catch (e) {
-        console.error("Failed to log search", e);
+        console.error('Failed to log search', e);
     }
 }
 
@@ -322,8 +359,10 @@ async function loadHashtags() {
 
         updateStats(state.hashtags.length, response.lastUpdated || new Date().toISOString(), source);
 
-        // Track and log this search attempt
-        logSearch(state.searchQuery, state.currentPlatform, state.hashtags.map(t => t.tag || t));
+        // Track and log topic searches only (not homepage loads)
+        if (state.searchQuery) {
+            logSearch(state.searchQuery, state.currentPlatform, state.hashtags.map(t => t.tag || t));
+        }
     } catch (error) {
         console.error('Failed to load hashtags:', error);
         const container = document.getElementById('hashtag-list');
@@ -362,6 +401,15 @@ async function loadHashtags() {
     state.isLoading = false;
 }
 
+// ─── Helper: render any Magic Search result object ──────
+function renderMagicResults(response) {
+    state.hashtags = response.allHashtags || [];
+    const container = document.getElementById('hashtag-list');
+    renderCategorizedHashtags(container, response.categories, response.analysis, response.ideas, response.amplification);
+    updateFABData(state.hashtags);
+    updateStats(state.hashtags.length, response.lastUpdated || new Date().toISOString(), response.fromCache ? '☁️ Cloud Cache' : '🔮 Magic Search');
+}
+
 // ─── Magic Search ──────────────────────────────────────
 async function loadMagicSearch(queryOrPayload) {
     if (!canSearch()) return;
@@ -372,86 +420,82 @@ async function loadMagicSearch(queryOrPayload) {
 
     let payload = queryOrPayload;
     if (typeof queryOrPayload === 'string') {
-        payload = {
-            content: queryOrPayload,
-            platform: state.currentPlatform
-        };
+        payload = { content: queryOrPayload, platform: state.currentPlatform };
     }
 
+    const content = payload.content || '';
+    const platform = payload.platform || state.currentPlatform;
+
+    // ── Step 1: Check Firestore ai_cache for a global cloud hit ─────
+    try {
+        const { getDocs, query: fsQuery, where, orderBy, limit: fsLimit } = await import('firebase/firestore');
+        const cacheKey = `magic_${platform}_${content.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').substring(0, 60)}`;
+        const cacheSnap = await getDocs(
+            fsQuery(
+                collection(db, 'ai_cache'),
+                where('key', '==', cacheKey),
+                fsLimit(1)
+            )
+        );
+        if (!cacheSnap.empty) {
+            const cached = cacheSnap.docs[0].data();
+            const expiresAt = cached.expiresAt || 0;
+            if (Date.now() < expiresAt && cached.result?.categories) {
+                console.log('☁️ Cloud Cache hit:', cacheKey);
+                renderMagicResults({ ...cached.result, fromCache: true });
+                state.isLoading = false;
+                showToast('☁️ Loaded from cloud cache!');
+                return;
+            }
+        }
+    } catch (cacheErr) {
+        console.warn('Cloud cache check failed, continuing to AI:', cacheErr.message);
+    }
+
+    // ── Step 2: Call AI ──────────────────────────────────────────────
     const magicSearchStartTime = Date.now();
-    const strPayload = typeof payload === 'string' ? payload : (payload.content || 'unknown');
-    trackMagicSearchStarted(strPayload, state.currentPlatform, 1);
+    trackMagicSearchStarted(content, platform, 1);
 
     try {
         const response = await magicSearch(payload);
 
         if (response.success && response.categories) {
-            // Categorized display
-            state.hashtags = response.allHashtags || [];
-            const container = document.getElementById('hashtag-list');
-            renderCategorizedHashtags(container, response.categories, response.analysis, response.ideas, response.amplification);
-            updateFABData(state.hashtags);
-            updateStats(state.hashtags.length, response.lastUpdated || new Date().toISOString(), '🔮 Magic Search');
-
-            // Track and log Magic Search
-            const strPayload = typeof payload === 'string' ? payload : payload.content;
+            renderMagicResults(response);
 
             trackMagicSearchCompleted(
-                strPayload,
-                state.currentPlatform,
-                response.meta?.modelUsed || 'unknown',
+                content, platform,
+                response.modelUsed || 'unknown',
                 1,
                 Date.now() - magicSearchStartTime
             );
 
-            logSearch(strPayload, state.currentPlatform, state.hashtags.map(t => t.tag || t));
-        } else if (response.error && response.error.includes('billing')) {
-            trackQuotaReached(state.currentPlatform, 10);
-            // Handle quota error
+            // Save full result to user history
+            logSearch(content, platform,
+                (response.allHashtags || []).map(t => t.tag || t),
+                response
+            );
+        } else if (response.error && (response.error.includes('billing') || response.error.includes('QUOTA'))) {
+            trackQuotaReached(platform, 10);
             const container = document.getElementById('hashtag-list');
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon" style="color: #ff6b35;">💳</div>
-                    <p class="empty-state-text" style="color: #ff6b35; margin-bottom: 8px;">OpenAI Quota Exceeded</p>
+                    <p class="empty-state-text" style="color: #ff6b35; margin-bottom: 8px;">Monthly Limit Reached</p>
                     <p style="font-size: 12px; color: var(--text-secondary); max-width: 300px; margin: 0 auto;">
-                        Your free trial has ended or you need to add billing details at
-                        <a href="https://platform.openai.com/account/billing" target="_blank" style="color: var(--accent-light);">platform.openai.com</a>.
+                        You have used all your Magic Searches for this month. <a href="#pricing" style="color: var(--accent-light);">Upgrade your plan</a> to get more.
                     </p>
                 </div>
             `;
             const skeleton = document.getElementById('skeleton-loader');
             if (skeleton) skeleton.classList.add('hidden');
-            if (container) container.style.display = '';
         } else {
-            // Fallback to regular search
             await loadHashtags();
         }
     } catch (error) {
         console.error('Magic Search failed:', error);
-        trackMagicSearchFailed(typeof payload === 'string' ? payload : (payload.content || 'unknown'), state.currentPlatform, 'unknown', error.message);
-
-        // Handle network/fetch level 429 error if it was thrown by api.js
-        if (error.message?.includes('429') || error.message?.includes('billing')) {
-            trackQuotaReached(state.currentPlatform, 10);
-            const container = document.getElementById('hashtag-list');
-            container.innerHTML = `
-                 <div class="empty-state">
-                     <div class="empty-state-icon" style="color: #ff6b35;">💳</div>
-                     <p class="empty-state-text" style="color: #ff6b35; margin-bottom: 8px;">OpenAI Quota Exceeded</p>
-                     <p style="font-size: 12px; color: var(--text-secondary); max-width: 300px; margin: 0 auto;">
-                         Please add billing details at
-                         <a href="https://platform.openai.com/account/billing" target="_blank" style="color: var(--accent-light);">platform.openai.com</a>.
-                     </p>
-                 </div>
-             `;
-            const skeleton = document.getElementById('skeleton-loader');
-            if (skeleton) skeleton.classList.add('hidden');
-            if (container) container.style.display = '';
-        } else {
-            // Fallback to regular search
-            state.searchQuery = typeof payload === 'string' ? payload : payload.content;
-            await loadHashtags();
-        }
+        trackMagicSearchFailed(content, platform, 'unknown', error.message);
+        state.searchQuery = content;
+        await loadHashtags();
     }
 
     state.isLoading = false;
@@ -690,6 +734,33 @@ function showCrashUI() {
         }
     }
 }
+
+// ─── Toast Helper ──────────────────────────────────────
+function showToast(message, duration = 3000) {
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toast-text');
+    if (toast && toastText) {
+        toastText.textContent = message;
+        toast.style.background = 'rgba(99, 102, 241, 0.9)';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), duration);
+    }
+}
+
+// Expose for Auth.js history replay
+window._taglyReplayMagicResult = function (historyRecord) {
+    if (!historyRecord.categories) return false;
+    state.isMagicMode = true;
+    renderMagicResults({
+        ...historyRecord,
+        allHashtags: historyRecord.results || [],
+        fromCache: true,
+        lastUpdated: historyRecord.timestamp
+    });
+    // Close profile modal
+    document.getElementById('profile-modal')?.classList.remove('visible');
+    return true;
+};
 
 // ─── Start ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);

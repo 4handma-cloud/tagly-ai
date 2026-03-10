@@ -139,19 +139,41 @@ export function initAuth(onProfileUpdate) {
 
             docs.forEach(data => {
                 const d = new Date(data.timestamp);
+                const isMagic = !!data.isMagic;
                 const item = document.createElement('div');
-                item.style.cssText = 'padding: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;';
+                item.style.cssText = 'padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s;';
+                item.onmouseover = () => { item.style.borderColor = 'var(--accent-light)'; };
+                item.onmouseout = () => { item.style.borderColor = 'var(--border-color)'; };
+
+                const magicBadge = isMagic ? '<span style="font-size:9px; background:rgba(139,92,246,0.2); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); border-radius:8px; padding:1px 6px; font-weight:700;">MAGIC</span>' : '';
+                const replayHint = (isMagic && data.categories) ? '<div style="font-size:10px; color:var(--accent-light); margin-top:4px;">&larr; Click to reload full AI results</div>' : '';
+
                 item.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-                        <strong style="color:var(--text-primary);">🔍 ${data.query || 'Auto Generated'}</strong>
-                        <span style="font-size:10px; color:var(--text-secondary);">${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                        <strong style="color:var(--text-primary); font-size:13px;">${isMagic ? '🔮' : '🔍'} ${data.query || 'Auto Generated'}</strong>
+                        <div style="display:flex; gap:6px; align-items:center;">${magicBadge}<span style="font-size:10px; color:var(--text-secondary);">${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
                     </div>
-                    <div style="font-size:11px; color:var(--text-secondary); display:flex; gap: 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <div style="font-size:11px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                         📱 ${data.platform || ''} ${data.results ? '· ' + data.results.slice(0, 3).join(', ') : ''}
                     </div>
+                    ${replayHint}
                 `;
+
+                item.addEventListener('click', () => {
+                    if (isMagic && data.categories && window._taglyReplayMagicResult && window._taglyReplayMagicResult(data)) {
+                        profileModal.classList.remove('visible');
+                        return;
+                    }
+                    profileModal.classList.remove('visible');
+                    const searchInput = document.getElementById('search-input');
+                    if (searchInput && data.query) {
+                        searchInput.value = data.query;
+                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+
                 historyList.appendChild(item);
-            });
+            }); // end forEach
 
             if (tier === 'spark' && snapshot.docs.length >= 20) {
                 upgradeMsg.style.display = 'block';
@@ -165,7 +187,7 @@ export function initAuth(onProfileUpdate) {
             console.error('Failed to load search history:', e);
             historyList.innerHTML = '<em style="color:var(--text-secondary)">History temporarily unavailable.</em>';
         }
-    }
+    } // end loadSearchHistory
 
     userBtn?.addEventListener('click', () => {
         if (profileModal) {
