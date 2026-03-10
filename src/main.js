@@ -155,19 +155,35 @@ function handleProfileUpdate(profile) {
     const limitUsage = document.getElementById('limit-usage');
 
     if (profile) {
-        counterDiv.style.display = 'block';
+        counterDiv.style.display = 'flex';
+        counterDiv.style.alignItems = 'center';
+        counterDiv.style.gap = '8px';
+
         const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+        const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
+        const tierLabels = { spark: 'FREE', creator: '⭐ CREATOR', growth: '🚀 GROWTH', agency: '🏢 AGENCY' };
         const tier = profile.subscriptionTier || 'spark';
-        const limit = limits[tier] || 10;
-        const used = profile.magicSearchesUsedThisMonth || 0;
+        const maxLimit = limits[tier] ?? 10;
+        const used = profile.searchesUsedThisMonth || 0;
+        const tierColor = tierColors[tier] || '#9ca3af';
+        const tierLabel = tierLabels[tier] || 'FREE';
 
-        limitUsage.textContent = limit === Infinity ? `${used}/∞` : `${used}/${limit}`;
+        const displayLimit = maxLimit === Infinity ? '∞' : maxLimit;
+        const remaining = maxLimit === Infinity ? '∞' : Math.max(0, maxLimit - used);
 
-        if (used >= limit && !profile.launchMode) {
-            limitUsage.style.color = 'var(--accent-orange)';
-        } else {
-            limitUsage.style.color = 'var(--text-primary)';
+        // Amber warning when <20% left, red when exhausted
+        let usageColor = 'var(--text-primary)';
+        if (maxLimit !== Infinity) {
+            const pct = used / maxLimit;
+            if (pct >= 1) usageColor = '#ef4444';
+            else if (pct >= 0.8) usageColor = '#f59e0b';
         }
+
+        counterDiv.innerHTML = `
+            <span style="font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; background:${tierColor}20; color:${tierColor}; border:1px solid ${tierColor}40; letter-spacing:0.5px;">${tierLabel}</span>
+            <span style="font-size:12px; color:var(--text-secondary);">Searches:</span>
+            <span id="limit-usage" style="font-size:12px; font-weight:700; color:${usageColor}">${used}/${displayLimit}</span>
+        `;
 
         // Auto-refresh if blocked by login prompt
         const listContainer = document.getElementById('hashtag-list');
@@ -177,7 +193,6 @@ function handleProfileUpdate(profile) {
     } else {
         counterDiv.style.display = 'none';
 
-        // Auto-refresh to reset layout if logged out
         const listContainer = document.getElementById('hashtag-list');
         if (listContainer && !listContainer.innerHTML.includes('Login to Search') && !listContainer.querySelector('.skeleton-loader')) {
             loadHashtags();
@@ -189,9 +204,9 @@ function canSearch() {
     if (currentUserProfile) {
         const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
         const tier = currentUserProfile.subscriptionTier || 'spark';
-        const limit = limits[tier] || 10;
+        const limit = limits[tier] ?? 10;
         const used = currentUserProfile.searchesUsedThisMonth || 0;
-        if (used >= limit && !currentUserProfile.launchMode) {
+        if (limit !== Infinity && used >= limit && !currentUserProfile.launchMode) {
             showUpgradePrompt();
             return false;
         }

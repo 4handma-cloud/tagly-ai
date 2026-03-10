@@ -107,74 +107,63 @@ export function initAuth(onProfileUpdate) {
         const tier = currentUserProfile?.subscriptionTier || 'spark';
 
         if (!isNextPage) {
-            historyList.innerHTML = 'Loading...';
+            historyList.innerHTML = '<em style="color:var(--text-secondary)">Loading history...</em>';
             currentHistoryDoc = null;
         }
 
         try {
+            // Simple query with NO orderBy to avoid composite index requirement.
+            // We sort in memory below.
             let q = query(
                 collection(db, 'tagly_searches'),
                 where('userId', '==', currentUser.uid),
-                orderBy('timestamp', 'desc'),
-                limit(HISTORY_LIMIT)
+                limit(20)
             );
-
-            if (isNextPage && currentHistoryDoc && tier !== 'spark') {
-                q = query(
-                    collection(db, 'tagly_searches'),
-                    where('userId', '==', currentUser.uid),
-                    orderBy('timestamp', 'desc'),
-                    startAfter(currentHistoryDoc),
-                    limit(HISTORY_LIMIT)
-                );
-            }
 
             const snapshot = await getDocs(q);
 
             if (!isNextPage) historyList.innerHTML = '';
 
             if (snapshot.empty && !isNextPage) {
-                historyList.innerHTML = 'No recent searches.';
+                historyList.innerHTML = '<em style="color:var(--text-secondary)">No searches yet. Start searching!</em>';
                 upgradeMsg.style.display = 'none';
                 nextBtnContainer.style.display = 'none';
                 return;
             }
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            // Sort in memory by timestamp desc
+            const docs = snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, HISTORY_LIMIT);
+
+            docs.forEach(data => {
                 const d = new Date(data.timestamp);
                 const item = document.createElement('div');
-                item.style.cssText = 'padding: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px;';
+                item.style.cssText = 'padding: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;';
                 item.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-                        <strong style="color:var(--text-primary);">${data.query || 'Auto Generated'}</strong>
-                        <span style="font-size:10px;">${d.toLocaleDateString()}</span>
+                        <strong style="color:var(--text-primary);">🔍 ${data.query || 'Auto Generated'}</strong>
+                        <span style="font-size:10px; color:var(--text-secondary);">${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <div style="font-size:11px; display:flex; gap: 4px; overflow-x:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                        ${data.results ? data.results.slice(0, 4).join(', ') : ''}
+                    <div style="font-size:11px; color:var(--text-secondary); display:flex; gap: 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        📱 ${data.platform || ''} ${data.results ? '· ' + data.results.slice(0, 3).join(', ') : ''}
                     </div>
                 `;
                 historyList.appendChild(item);
             });
 
-            currentHistoryDoc = snapshot.docs[snapshot.docs.length - 1];
-
-            if (snapshot.docs.length === HISTORY_LIMIT) {
-                if (tier === 'spark') {
-                    upgradeMsg.style.display = 'block';
-                    nextBtnContainer.style.display = 'none';
-                } else {
-                    upgradeMsg.style.display = 'none';
-                    nextBtnContainer.style.display = 'block';
-                }
+            if (tier === 'spark' && snapshot.docs.length >= 20) {
+                upgradeMsg.style.display = 'block';
+                nextBtnContainer.style.display = 'none';
             } else {
                 upgradeMsg.style.display = 'none';
                 nextBtnContainer.style.display = 'none';
             }
 
         } catch (e) {
-            console.error("Failed to load search history:", e);
-            historyList.innerHTML = 'Failed to load history due to Firestore index requirements. (Check console)';
+            console.error('Failed to load search history:', e);
+            historyList.innerHTML = '<em style="color:var(--text-secondary)">History temporarily unavailable.</em>';
         }
     }
 
@@ -184,7 +173,21 @@ export function initAuth(onProfileUpdate) {
             if (input && currentUserProfile) {
                 input.value = currentUserProfile.displayName || '';
             }
-            document.getElementById('profile-desc').textContent = `Manage your ${currentUserProfile?.subscriptionTier || ''} account.`;
+
+            const tier = currentUserProfile?.subscriptionTier || 'spark';
+            const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+            const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
+            const tierLabels = { spark: 'Free', creator: '⭐ Creator', growth: '🚀 Growth', agency: '🏢 Agency' };
+            const maxLimit = limits[tier] ?? 10;
+            const used = currentUserProfile?.searchesUsedThisMonth || 0;
+            const displayLimit = maxLimit === Infinity ? '∞' : maxLimit;
+            const tierColor = tierColors[tier] || '#9ca3af';
+            const tierLabel = tierLabels[tier] || 'Free';
+
+            document.getElementById('profile-desc').innerHTML = `
+                <span style="display:inline-block; padding:3px 10px; border-radius:12px; background:${tierColor}20; color:${tierColor}; border:1px solid ${tierColor}40; font-size:11px; font-weight:700; margin-bottom:6px;">${tierLabel} Plan</span><br>
+                <span style="color:var(--text-secondary); font-size:12px;">Searches used this month: <strong style="color:var(--text-primary)">${used}/${displayLimit}</strong></span>
+            `;
             document.getElementById('profile-password-msg').style.display = 'none';
             document.getElementById('profile-new-password').value = '';
 
