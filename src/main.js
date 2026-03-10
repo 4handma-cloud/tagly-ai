@@ -554,27 +554,192 @@ async function handleImageUpload(file) {
     alert('Image-to-Hashtag is launching very soon for subscribers! You will be notified when it is ready.');
 }
 
+const PLATFORM_TIERS = {
+    'youtube': { name: 'YouTube', tier: 'free', emoji: '▶️', color: '#FF0000', unlockStr: 'YouTube only on free plan' },
+    'instagram': { name: 'Instagram', tier: 'spark', emoji: '📸', color: '#A855F7', unlockStr: 'Instagram + TikTok' },
+    'tiktok': { name: 'TikTok', tier: 'spark', emoji: '🎵', color: '#69C9D0', unlockStr: 'Instagram + TikTok' },
+    'facebook': { name: 'Facebook', tier: 'growth', emoji: '👥', color: '#3B82F6', unlockStr: 'Facebook + Twitter/X' },
+    'x': { name: 'Twitter / X', tier: 'growth', emoji: '𝕏', color: '#FFFFFF', unlockStr: 'Facebook + Twitter/X' },
+    'linkedin': { name: 'LinkedIn', tier: 'agency', emoji: '💼', color: '#F59E0B', unlockStr: 'All 9 platforms' },
+    'pinterest': { name: 'Pinterest', tier: 'agency', emoji: '📌', color: '#E60023', unlockStr: 'All 9 platforms' },
+    'threads': { name: 'Threads', tier: 'agency', emoji: '🧵', color: '#FFFFFF', unlockStr: 'All 9 platforms' },
+    'snapchat': { name: 'Snapchat', tier: 'agency', emoji: '👻', color: '#FFFC00', unlockStr: 'All 9 platforms' }
+};
+
+const TIER_ORDER = ['free', 'spark', 'growth', 'agency'];
+
+function isPlatformUnlocked(platformKey, userTier) {
+    const required = PLATFORM_TIERS[platformKey].tier;
+    return TIER_ORDER.indexOf(userTier) >= TIER_ORDER.indexOf(required);
+}
+
 function initMagicModal() {
     const magicBtn = document.getElementById('magic-btn');
     const overlay = document.getElementById('magic-modal');
     const closeBtn = document.getElementById('magic-modal-close');
     const submitBtn = document.getElementById('magic-submit-btn');
 
+    const subtitleEl = document.getElementById('magic-rotating-subtitle');
+    const SUBTITLES = [
+        "🎯 Find hashtags your competitors haven't discovered yet",
+        "🚀 One topic → 30 laser-targeted hashtags",
+        "⚡ Powered by AI trained on 50M viral posts",
+        "🔥 Your content deserves to be seen",
+        "💡 Stop guessing. Start growing.",
+        "🌍 Real trends. Real results. Right now."
+    ];
+    let subtitleIdx = 0;
+    setInterval(() => {
+        if (!overlay?.classList.contains('visible') || !subtitleEl) return;
+        subtitleIdx = (subtitleIdx + 1) % SUBTITLES.length;
+        subtitleEl.style.opacity = 0;
+        setTimeout(() => {
+            subtitleEl.textContent = SUBTITLES[subtitleIdx];
+            subtitleEl.style.opacity = 1;
+        }, 150);
+    }, 3000);
+
+    const descEl = document.getElementById('magic-desc');
+    const PLACEHOLDERS = [
+        "e.g. I make 5-minute gym workouts for busy moms...",
+        "e.g. Street food travel vlogs in South India...",
+        "e.g. Budget fashion hauls under ₹500...",
+        "e.g. Tech unboxing for college students...",
+        "e.g. Home cooking Bengali recipes...",
+        "e.g. Motivational content for entrepreneurs..."
+    ];
+    let placeIdx = 0;
+    setInterval(() => {
+        if (!overlay?.classList.contains('visible') || !descEl) return;
+        placeIdx = (placeIdx + 1) % PLACEHOLDERS.length;
+        descEl.placeholder = PLACEHOLDERS[placeIdx];
+    }, 4000);
+
+    const platformSelect = document.getElementById('magic-platform');
+    let lastValidPlatform = 'youtube';
+
+    platformSelect?.addEventListener('change', (e) => {
+        const userTier = currentUserProfile?.subscriptionTier || 'free';
+        const key = e.target.value;
+        if (!isPlatformUnlocked(key, userTier)) {
+            e.target.value = lastValidPlatform;
+
+            const tooltip = document.getElementById('magic-upgrade-tooltip');
+            const config = PLATFORM_TIERS[key];
+            if (tooltip && config) {
+                document.getElementById('magic-tooltip-badge').textContent = `🔒 ${config.tier.toUpperCase()} PLAN`;
+                document.getElementById('magic-tooltip-badge').style.color = config.color;
+                document.getElementById('magic-tooltip-unlocks').innerHTML = `Unlocks <strong>${config.unlockStr}</strong> Magic Search`;
+
+                let tagline = 'Perfect for solo creators';
+                if (config.tier === 'growth') tagline = 'For creators going full time';
+                if (config.tier === 'agency') tagline = 'For agencies and power users';
+                document.getElementById('magic-tooltip-tagline').textContent = tagline;
+
+                const tbtn = document.getElementById('magic-tooltip-btn');
+                tbtn.style.background = config.color;
+                tbtn.textContent = `Upgrade to ${config.tier.charAt(0).toUpperCase() + config.tier.slice(1)}`;
+
+                tooltip.style.display = 'block';
+            }
+            return;
+        }
+        document.getElementById('magic-upgrade-tooltip').style.display = 'none';
+        lastValidPlatform = key;
+    });
+
+    document.getElementById('magic-tooltip-close')?.addEventListener('click', () => {
+        document.getElementById('magic-upgrade-tooltip').style.display = 'none';
+    });
+
     magicBtn?.addEventListener('click', () => {
         // Enforce limit on front-end before opening modal
+        let used = 0;
+        let maxLimit = 6;
         const limitUsage = document.getElementById('limit-usage')?.textContent || '';
-        const limitMatched = limitUsage.match(/(\d+)\/(\d+)/);
+        const limitMatched = limitUsage.match(/(\d+)\/(\d+|∞)/);
         if (limitMatched) {
-            const used = parseInt(limitMatched[1]);
-            const limit = parseInt(limitMatched[2]);
-            if (used >= limit) {
+            used = parseInt(limitMatched[1]);
+            maxLimit = limitMatched[2] === '∞' ? Infinity : parseInt(limitMatched[2]);
+            if (used >= maxLimit) {
                 document.getElementById('pricing-modal')?.classList.add('visible');
                 return;
             }
         }
 
+        const userTier = currentUserProfile?.subscriptionTier || 'free';
+
+        // Populate platforms
+        if (platformSelect) {
+            platformSelect.innerHTML = '';
+            Object.keys(PLATFORM_TIERS).forEach(key => {
+                const config = PLATFORM_TIERS[key];
+                const unlocked = isPlatformUnlocked(key, userTier);
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `${unlocked ? '✅' : '🔒'} ${config.name}${unlocked ? '' : ` — ${config.tier.toUpperCase()} plan`}`;
+                if (!unlocked) opt.style.opacity = '0.5';
+                if (!unlocked) opt.disabled = true;
+                platformSelect.appendChild(opt);
+            });
+            // Try to set to last used if available, otherwise default to first unlocked
+            lastValidPlatform = isPlatformUnlocked(state.currentPlatform || 'youtube', userTier) ? (state.currentPlatform || 'youtube') : 'youtube';
+            platformSelect.value = lastValidPlatform;
+            document.getElementById('magic-upgrade-tooltip').style.display = 'none';
+        }
+
+        // Populate Tier Unlock Preview
+        const previewEl = document.getElementById('tier-preview-container');
+        if (previewEl) {
+            const tiers = [
+                { name: 'Free', platforms: '▶️ YouTube', tier: 'free' },
+                { name: 'Spark', platforms: '📸 Instagram · 🎵 TikTok', tier: 'spark' },
+                { name: 'Growth', platforms: '👥 Facebook · 𝕏 Twitter', tier: 'growth' },
+                { name: 'Agency', platforms: '💼 LinkedIn · 📌 Pinterest · +2', tier: 'agency' },
+            ];
+
+            previewEl.innerHTML = '<div class="tier-preview">' + tiers.map(t => {
+                const isCurrent = userTier === t.tier;
+                const isUnlocked = TIER_ORDER.indexOf(userTier) >= TIER_ORDER.indexOf(t.tier);
+                return `
+                    <div class="tier-row ${isCurrent ? 'current' : ''} ${isUnlocked ? 'unlocked' : 'locked'}">
+                        <span class="tier-name">${t.name}</span>
+                        <span class="tier-platforms">${t.platforms}</span>
+                        ${!isUnlocked ? '<span class="tier-lock">🔒</span>' : ''}
+                    </div>
+                `;
+            }).join('') + '</div>';
+        }
+
+        // Setup counter display
+        const cb = document.getElementById('magic-counter-badge');
+        if (cb) {
+            cb.style.display = 'inline-flex';
+            document.getElementById('magic-counter-used').textContent = used;
+            document.getElementById('magic-counter-total').textContent = maxLimit === Infinity ? '∞' : maxLimit;
+        }
+
+        // Free tier banner
+        const fb = document.getElementById('magic-free-banner');
+        if (fb) fb.style.display = (userTier === 'free' || !currentUserProfile) ? 'flex' : 'none';
+
+        // Update button subtext
+        const sub = document.getElementById('magic-btn-sub');
+        if (sub) {
+            sub.textContent = maxLimit === Infinity ? `Unlimited Searches left` : `Search ${used + 1} of ${maxLimit}`;
+        }
+
+        // Dynamic Button
+        if (submitBtn) {
+            submitBtn.classList.remove('urgent');
+            if (maxLimit !== Infinity && (maxLimit - used) <= 2) {
+                submitBtn.classList.add('urgent');
+                sub.textContent = `${maxLimit - used} left this month`;
+            }
+        }
+
         overlay.classList.add('visible');
-        setTimeout(() => document.getElementById('magic-desc').focus(), 100);
+        setTimeout(() => descEl?.focus(), 100);
     });
 
     closeBtn?.addEventListener('click', () => {

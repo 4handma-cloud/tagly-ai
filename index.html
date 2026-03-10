@@ -16,7 +16,8 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@700;800&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@700;800&display=swap"
     rel="stylesheet" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏷️</text></svg>" />
@@ -272,53 +273,105 @@
     <div class="modal-overlay" id="magic-modal">
       <div class="modal">
         <button class="modal-close" id="magic-modal-close">&times;</button>
-        <div class="modal-icon">✨</div>
-        <h2 class="modal-title">Magic <span class="logo-accent">Search</span></h2>
-        <p class="modal-desc">Provide context to generate a highly targeted 3-tier hashtag strategy.</p>
+
+        <div class="magic-modal-header">
+          <div class="magic-icon-wrapper">
+            <div class="modal-icon">✨</div>
+          </div>
+          <h2 class="magic-title">Magic <span class="logo-accent">Search</span></h2>
+          <p class="magic-subtitle rotating-subtitle" id="magic-rotating-subtitle">🎯 Find hashtags your competitors
+            haven't discovered yet</p>
+
+          <div class="search-counter-badge" id="magic-counter-badge" style="display:none;">
+            <span class="counter-number" id="magic-counter-used">0</span>
+            <span class="counter-slash">/</span>
+            <span class="counter-total" id="magic-counter-total">10</span>
+            <span class="counter-label">searches used</span>
+          </div>
+        </div>
 
         <div class="magic-form">
-          <textarea id="magic-desc" placeholder="Describe your content in detail..." rows="3"></textarea>
+          <textarea id="magic-desc" placeholder="e.g. I make 5-minute gym workouts for busy moms..."
+            rows="3"></textarea>
 
           <div class="form-row">
-            <select id="magic-platform">
-              <option value="youtube">YouTube</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="threads">Threads</option>
-              <option value="x">Twitter / X</option>
-              <option value="facebook">Facebook</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="pinterest">Pinterest</option>
-              <option value="snapchat">Snapchat</option>
-            </select>
-            <select id="magic-format">
-              <option value="">Any Format</option>
-              <option value="Reel / Short Video">Reel / Short Video</option>
-              <option value="Static Post">Static Post</option>
-              <option value="Carousel">Carousel</option>
-              <option value="Story">Story</option>
-            </select>
+            <div class="platform-select-wrapper" style="position:relative; flex: 1;">
+              <span class="dropdown-label">📱 Where are you posting?</span>
+              <select id="magic-platform">
+                <!-- JS Populated -->
+              </select>
+
+              <div id="magic-upgrade-tooltip" class="upgrade-tooltip" style="display:none;">
+                <button class="tooltip-close" id="magic-tooltip-close">&times;</button>
+                <div class="tooltip-badge" id="magic-tooltip-badge">🔒 SPARK PLAN</div>
+                <p class="tooltip-unlocks" id="magic-tooltip-unlocks">Unlocks <strong>Instagram + TikTok</strong> Magic
+                  Search</p>
+                <p class="tooltip-tagline" id="magic-tooltip-tagline">Perfect for solo creators</p>
+                <button class="tooltip-upgrade-btn" id="magic-tooltip-btn"
+                  onclick="document.getElementById('pricing-modal').classList.add('visible'); document.getElementById('magic-upgrade-tooltip').style.display='none';">Upgrade</button>
+              </div>
+            </div>
+
+            <div style="flex: 1;">
+              <span class="dropdown-label">🎬 What's your format?</span>
+              <select id="magic-format">
+                <option value="any">🎯 Any Format</option>
+                <option value="reel">🎬 Reel / Short Video</option>
+                <option value="post">🖼️ Static Post</option>
+                <option value="carousel">📚 Carousel</option>
+                <option value="story">⏱️ Story</option>
+                <option value="live">🔴 Live Stream</option>
+              </select>
+            </div>
           </div>
+
+          <div id="tier-preview-container"></div>
 
           <div class="form-row">
-            <select id="magic-audience">
-              <option value="">Broad Audience</option>
-              <option value="Gen Z (16-24)">Gen Z (16-24)</option>
-              <option value="Millennials">Millennials</option>
-              <option value="Professionals/B2B">Professionals/B2B</option>
-              <option value="Entrepreneurs">Entrepreneurs</option>
-              <option value="Fitness/Health">Fitness/Health</option>
-            </select>
-            <select id="magic-tone">
-              <option value="">Any Tone</option>
-              <option value="Educational">Educational</option>
-              <option value="Inspirational">Inspirational</option>
-              <option value="Humorous">Humorous</option>
-              <option value="Aesthetic">Aesthetic</option>
-            </select>
+            <div style="flex: 1;">
+              <span class="dropdown-label">👥 Who's watching?</span>
+              <select id="magic-audience">
+                <option value="broad">🌍 Broad Audience</option>
+                <option value="genz">💃 Gen Z (16-24)</option>
+                <option value="millennials">📱 Millennials</option>
+                <option value="b2b">💼 Professionals/B2B</option>
+                <option value="entrepreneurs">🚀 Entrepreneurs</option>
+                <option value="fitness">💪 Fitness/Health</option>
+                <option value="parents">👨‍👩‍👧 Parents</option>
+                <option value="students">🎓 Students</option>
+              </select>
+            </div>
+            <div style="flex: 1;">
+              <span class="dropdown-label">🎭 What's your vibe?</span>
+              <select id="magic-tone">
+                <option value="any">🎭 Any Tone</option>
+                <option value="educational">📚 Educational</option>
+                <option value="inspirational">✨ Inspirational</option>
+                <option value="humorous">😂 Humorous</option>
+                <option value="aesthetic">🌸 Aesthetic</option>
+                <option value="bold">🔥 Bold & Direct</option>
+                <option value="storytelling">📖 Storytelling</option>
+              </select>
+            </div>
           </div>
 
-          <button class="modal-cta" id="magic-submit-btn">Generate Strategy</button>
+          <button class="modal-cta generate-btn" id="magic-submit-btn">
+            <div>✨ Generate My Strategy</div>
+            <span class="btn-sub" id="magic-btn-sub">Search 1 of 6</span>
+          </button>
+
+          <div id="magic-free-banner" class="free-tier-banner" style="display:none;">
+            <div class="banner-left">
+              <span class="banner-icon">🔒</span>
+              <div>
+                <strong>YouTube only on free plan</strong>
+                <p>Unlock Instagram + TikTok from $5/mo</p>
+              </div>
+            </div>
+            <button class="banner-upgrade-btn"
+              onclick="document.getElementById('magic-modal').classList.remove('visible'); document.getElementById('pricing-modal').classList.add('visible');">Upgrade
+              →</button>
+          </div>
         </div>
       </div>
     </div>
