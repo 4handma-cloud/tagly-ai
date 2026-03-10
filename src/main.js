@@ -688,28 +688,6 @@ function initMagicModal() {
             document.getElementById('magic-upgrade-tooltip').style.display = 'none';
         }
 
-        // Populate Tier Unlock Preview
-        const previewEl = document.getElementById('tier-preview-container');
-        if (previewEl) {
-            const tiers = [
-                { name: 'Free', platforms: '▶️ YouTube', tier: 'free' },
-                { name: 'Spark', platforms: '📸 Instagram · 🎵 TikTok', tier: 'spark' },
-                { name: 'Growth', platforms: '👥 Facebook · 𝕏 Twitter', tier: 'growth' },
-                { name: 'Agency', platforms: '💼 LinkedIn · 📌 Pinterest · +2', tier: 'agency' },
-            ];
-
-            previewEl.innerHTML = '<div class="tier-preview">' + tiers.map(t => {
-                const isCurrent = userTier === t.tier;
-                const isUnlocked = TIER_ORDER.indexOf(userTier) >= TIER_ORDER.indexOf(t.tier);
-                return `
-                    <div class="tier-row ${isCurrent ? 'current' : ''} ${isUnlocked ? 'unlocked' : 'locked'}">
-                        <span class="tier-name">${t.name}</span>
-                        <span class="tier-platforms">${t.platforms}</span>
-                        ${!isUnlocked ? '<span class="tier-lock">🔒</span>' : ''}
-                    </div>
-                `;
-            }).join('') + '</div>';
-        }
 
         // Setup counter display
         const cb = document.getElementById('magic-counter-badge');
