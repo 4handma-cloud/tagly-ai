@@ -1953,3 +1953,168 @@ option:disabled {
 .tier-lock {
   font-size: 10px;
 }
+
+/* ─── Seamless Mobile Optimizations ────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Let magic form flow vertically on smaller screens */
+  .magic-form .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stats-bar {
+    padding: 0 16px 14px;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    line-height: 1.4;
+  }
+
+  .stats-item {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  /* Header Density */
+  .header-inner {
+    padding: 8px 12px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    letter-spacing: -0.2px;
+  }
+
+  .logo-icon {
+    font-size: 20px;
+  }
+
+  .header-meta {
+    gap: 6px;
+  }
+
+  .live-indicator {
+    padding: 3px 6px;
+    gap: 4px;
+  }
+
+  .live-dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  .live-text {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+
+  .pro-btn,
+  #user-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  #subscribe-btn {
+    height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  #limit-counter {
+    margin-right: 4px !important;
+    font-size: 10px !important;
+  }
+
+  #theme-toggle {
+    padding: 2px !important;
+    font-size: 14px !important;
+  }
+
+  /* Platform Tabs Density */
+  .platform-tabs {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .platform-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .platform-tab-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Search Bar Density */
+  .search-container {
+    padding: 0 12px 14px;
+  }
+
+  .search-bar {
+    height: 44px;
+    padding: 4px;
+    gap: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .search-icon {
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    font-size: 13.5px;
+    padding: 4px;
+  }
+
+  .search-input[data-placeholder]::after {
+    font-size: 13.5px !important;
+  }
+
+  .camera-btn {
+    height: 32px;
+    width: 32px;
+    border-radius: 6px;
+  }
+
+  .magic-btn {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Make app feel natively contained on small viewports */
+  #app {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 360px) {
+
+  /* Ultra small screens (e.g. iPhone SE, old Androids) */
+  .logo-text {
+    display: none;
+  }
+
+  .pro-btn,
+  #user-btn {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .header-meta {
+    gap: 4px;
+  }
+
+  .magic-btn {
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
+}

@@ -6,7 +6,7 @@ export async function quotaEnforcerMiddleware(req, res, next) {
         const userId = req.user?.uid;
         if (!userId || !db) return next();
 
-        const userDocRef = db.collection('users').doc(userId);
+        const userDocRef = db.collection('tagly_users').doc(userId);
         const user = await userDocRef.get();
 
         if (!user.exists) return next();
@@ -36,8 +36,8 @@ export async function quotaEnforcerMiddleware(req, res, next) {
 export async function incrementMagicSearchCount(userId) {
     if (!userId || !db) return;
     try {
-        await db.collection('users').doc(userId).set({
-            magicSearchesUsedThisMonth: admin.firestore.FieldValue.increment(1),
+        await db.collection('tagly_users').doc(userId).set({
+            searchesUsedThisMonth: admin.firestore.FieldValue.increment(1),
             magicSearchResetDate: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
     } catch (err) {

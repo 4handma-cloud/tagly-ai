@@ -52,7 +52,7 @@
         <div class="header-meta">
           <div class="limit-counter" id="limit-counter"
             style="display:none; font-size:12px; margin-right: 15px; color: var(--text-secondary);">
-            Searches: <span id="limit-usage" style="color:var(--text-primary); font-weight:600;">0/6</span>
+            Searches: <span id="limit-usage" style="color:var(--text-primary); font-weight:600;">0/10</span>
           </div>
           <div class="live-indicator" id="live-indicator">
             <span class="live-dot"></span>
@@ -285,7 +285,7 @@
           <div class="search-counter-badge" id="magic-counter-badge" style="display:none;">
             <span class="counter-number" id="magic-counter-used">0</span>
             <span class="counter-slash">/</span>
-            <span class="counter-total" id="magic-counter-total">6</span>
+            <span class="counter-total" id="magic-counter-total">10</span>
             <span class="counter-label">searches used</span>
           </div>
         </div>
@@ -356,7 +356,7 @@
 
           <button class="modal-cta generate-btn" id="magic-submit-btn">
             <div>✨ Generate My Strategy</div>
-            <span class="btn-sub" id="magic-btn-sub">Search 1 of 6</span>
+            <span class="btn-sub" id="magic-btn-sub">Search 1 of 10</span>
           </button>
 
           <div id="magic-free-banner" class="free-tier-banner" style="display:none;">
@@ -486,6 +486,8 @@
           <div style="margin-bottom: 16px; text-align: left;">
             <label style="font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Update
               Password</label>
+            <input type="password" id="profile-current-password" class="auth-input" placeholder="Current Password"
+              style="margin-bottom: 8px;" />
             <input type="password" id="profile-new-password" class="auth-input"
               placeholder="New Password (min 6 chars)" />
             <div id="profile-password-msg" style="font-size: 11px; display: none; margin-top: 4px;"></div>

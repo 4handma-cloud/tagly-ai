@@ -11,7 +11,9 @@ import {
     RecaptchaVerifier,
     signInWithPhoneNumber,
     updateProfile,
-    updatePassword
+    updatePassword,
+    EmailAuthProvider,
+    reauthenticateWithCredential
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, where, orderBy, limit, startAfter } from "firebase/firestore";
 
@@ -46,5 +48,7 @@ export {
     signInWithPhoneNumber,
     updateProfile,
     updatePassword,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
     doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, where, orderBy, limit, startAfter
 };

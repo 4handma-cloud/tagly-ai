@@ -33,10 +33,10 @@ export async function routeMagicSearch(userId, platform, topic) {
             const admin = (await import('firebase-admin')).default;
             if (admin.apps && admin.apps.length > 0) {
                 const db = admin.firestore();
-                const userDoc = await db.collection('users').doc(userId).get();
+                const userDoc = await db.collection('tagly_users').doc(userId).get();
                 if (userDoc.exists) {
                     const data = userDoc.data();
-                    searchCount = (data.magicSearchesUsedThisMonth || 0) + 1;
+                    searchCount = (data.searchesUsedThisMonth || 0) + 1;
                     isPaidUser = !!data.isPaidUser;
                 }
             }

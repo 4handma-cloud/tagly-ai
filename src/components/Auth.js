@@ -197,10 +197,10 @@ export function initAuth(onProfileUpdate) {
             }
 
             const tier = currentUserProfile?.subscriptionTier || 'spark';
-            const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
+            const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
             const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
             const tierLabels = { spark: 'Trial', creator: '⭐ Creator', growth: '🚀 Growth', agency: '🏢 Agency' };
-            const maxLimit = limits[tier] ?? 6;
+            const maxLimit = limits[tier] ?? 10;
             const used = currentUserProfile?.searchesUsedThisMonth || 0;
             const displayLimit = maxLimit === Infinity ? '∞' : maxLimit;
             const tierColor = tierColors[tier] || '#9ca3af';
@@ -212,6 +212,8 @@ export function initAuth(onProfileUpdate) {
             `;
             document.getElementById('profile-password-msg').style.display = 'none';
             document.getElementById('profile-new-password').value = '';
+            const currPw = document.getElementById('profile-current-password');
+            if (currPw) currPw.value = '';
 
             loadSearchHistory();
 
@@ -225,9 +227,17 @@ export function initAuth(onProfileUpdate) {
 
     document.getElementById('profile-password-btn')?.addEventListener('click', async (e) => {
         const passInput = document.getElementById('profile-new-password');
+        const currentPassInput = document.getElementById('profile-current-password');
         const msg = document.getElementById('profile-password-msg');
         const newPass = passInput.value;
+        const currentPass = currentPassInput ? currentPassInput.value : '';
         const btn = e.currentTarget;
+
+        if (!currentPass) {
+            msg.textContent = 'Please enter your current password.';
+            msg.style.display = 'block';
+            return;
+        }
 
         if (newPass.length < 6) {
             msg.textContent = 'Password must be at least 6 characters.';
@@ -239,13 +249,23 @@ export function initAuth(onProfileUpdate) {
         msg.style.display = 'none';
 
         try {
+            // Re-authenticate first
+            const { EmailAuthProvider, reauthenticateWithCredential } = await import('../utils/firebase.js');
+            const credential = EmailAuthProvider.credential(currentUser.email, currentPass);
+            await reauthenticateWithCredential(currentUser, credential);
+
             await updatePassword(currentUser, newPass);
-            btn.textContent = 'Password Updated!';
+            btn.textContent = 'Password updated! ✓';
             passInput.value = '';
+            if (currentPassInput) currentPassInput.value = '';
             setTimeout(() => btn.textContent = 'Change Password', 3000);
         } catch (err) {
             console.error(err);
-            msg.textContent = err.message || 'Failed to update password. You may need to sign out and sign back in.';
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                msg.textContent = 'Current password is incorrect. Try again.';
+            } else {
+                msg.textContent = err.message || 'Failed to update password.';
+            }
             msg.style.display = 'block';
             btn.textContent = 'Change Password';
         }
@@ -263,15 +283,24 @@ export function initAuth(onProfileUpdate) {
     document.getElementById('profile-save-btn')?.addEventListener('click', async (e) => {
         if (!currentUser) return;
         const newName = document.getElementById('profile-name').value.trim();
-        e.currentTarget.textContent = 'Saving...';
+        const btn = e.currentTarget;
+        btn.textContent = 'Saving...';
+        let success = false;
         try {
             await updateDoc(doc(db, 'tagly_users', currentUser.uid), { displayName: newName });
-            e.currentTarget.textContent = 'Updated!';
-            setTimeout(() => e.currentTarget.textContent = 'Update Name', 2000);
+            try {
+                // Ensure users collection is also synced per request
+                await updateDoc(doc(db, 'users', currentUser.uid), { displayName: newName });
+            } catch (err) { }
+            success = true;
         } catch (err) {
             console.error(err);
-            e.currentTarget.textContent = 'Failed';
-            setTimeout(() => e.currentTarget.textContent = 'Update Name', 2000);
+        } finally {
+            // setIsSaving(false) equivalent inside finally block to guarantee release
+            btn.textContent = success ? 'Name saved! ✓' : 'Failed';
+            setTimeout(() => {
+                btn.textContent = 'Update Name';
+            }, 2000);
         }
     });
 
