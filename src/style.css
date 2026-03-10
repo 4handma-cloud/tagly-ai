@@ -40,10 +40,10 @@
 }
 
 [data-theme="light"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
+  --bg-primary: #f0e9eb;
+  --bg-secondary: #e6dfe1;
   --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
+  --bg-card-hover: #fcf5f7;
   --bg-elevated: #e2e8f0;
   --accent: #8A2BE2;
   --accent-light: #a855f7;
@@ -55,7 +55,7 @@
   --border: rgba(0, 0, 0, 0.08);
   --border-accent: rgba(138, 43, 226, 0.2);
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
-  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-header: rgba(240, 233, 235, 0.85);
 }
 
 html {
