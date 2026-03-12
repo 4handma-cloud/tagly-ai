@@ -104,12 +104,12 @@ All hashtags start with #. No duplicates.`;
   const personality = PLATFORM_PERSONALITIES[platform] || PLATFORM_PERSONALITIES.instagram;
 
   const tasks = {
-    homepage_top100: `Generate exactly 100 trending and high-performing hashtags for ${platform}.
+    homepage_top100: `Generate exactly 48 trending and high-performing hashtags for ${platform}.
 These will be shown on the homepage as today's top hashtags.
 Mix: 40% broad appeal, 35% niche community, 25% currently trending.`,
 
-    topic_search_30: `Generate exactly 30 highly targeted hashtags for the given topic on ${platform}.
-Mix: 10 high-volume broad tags, 12 medium niche tags, 8 micro-niche community tags.
+    topic_search_48: `Generate exactly 48 highly targeted hashtags for the given topic on ${platform}.
+Mix: 16 high-volume broad tags, 16 medium niche tags, 16 micro-niche community tags.
 Avoid generic hashtags not related to this specific topic.`
   };
 
@@ -122,7 +122,7 @@ CRITICAL OUTPUT RULES:
 
 Return: {"hashtags": ["#tag1", "#tag2", ...]}`;
 
-  const task = tasks[taskType] || tasks.topic_search_30;
+  const task = tasks[taskType] || tasks.topic_search_48;
   return `${personality}\n\n${task}\n\n${universalFormat}`;
 }
 

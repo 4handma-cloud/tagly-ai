@@ -52,7 +52,7 @@
         <div class="header-meta">
           <div class="limit-counter" id="limit-counter"
             style="display:none; font-size:12px; margin-right: 15px; color: var(--text-secondary);">
-            Searches: <span id="limit-usage" style="color:var(--text-primary); font-weight:600;">0/10</span>
+            Searches: <span id="limit-usage" style="color:var(--text-primary); font-weight:600;">0/6</span>
           </div>
           <div class="live-indicator" id="live-indicator">
             <span class="live-dot"></span>
@@ -65,6 +65,24 @@
         </div>
       </div>
     </header>
+
+    <!-- Magic Hero Section -->
+    <div class="magic-hero-section">
+      <div class="powered-by-label">
+        <span class="powered-dot"></span>
+        powered by
+      </div>
+
+      <div class="magic-orbit-container">
+        <img src="/images/ai-models-dice.jpg" class="hero-stack-img" alt="AI Models">
+
+        <button class="magic-center-btn" id="hero-magic-btn">
+          <span class="magic-btn-sparkle">✨</span>
+          <span class="magic-btn-text">Magic</span>
+          <span class="magic-btn-sub">AI Search</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Platform Tabs -->
     <nav class="platform-tabs" id="platform-tabs"></nav>
@@ -89,13 +107,17 @@
         </label>
         <input type="file" id="image-upload" accept="image/*" style="display:none;" />
 
-        <button class="magic-btn" id="magic-btn" title="AI Magic Search ✨" style="margin:0;">✨ Magic</button>
+        <button class="magic-btn" id="magic-btn" title="AI Magic Search">
+          <span>✨ Magic</span>
+        </button>
+
+        <button class="search-submit-btn" id="search-submit-btn" title="Search">🔍 Search</button>
       </div>
     </div>
 
     <!-- Stats Bar -->
     <div class="stats-bar" id="stats-bar">
-      <span class="stats-item" id="stats-count">100 hashtags</span>
+      <span class="stats-item" id="stats-count">48 hashtags</span>
       <span class="stats-divider">•</span>
       <span class="stats-item" id="stats-updated">Updated just now</span>
     </div>
@@ -270,111 +292,114 @@
     </div>
 
     <!-- Magic Search Modal -->
-    <div class="modal-overlay" id="magic-modal">
-      <div class="modal">
-        <button class="modal-close" id="magic-modal-close">&times;</button>
+    <div class="modal-overlay magic-modal-overlay" id="magic-modal">
+      <div class="magic-modal-container">
+        <button class="modal-close-btn" id="magic-modal-close">✕</button>
+        <div class="magic-modal-scroll">
+          <div class="magic-modal-header">
+            <div class="modal-icon-container">
+              <span class="modal-sparkle-main">✨</span>
+              <span class="modal-sparkle-orbit-1">⭐</span>
+              <span class="modal-sparkle-orbit-2">💫</span>
+            </div>
+            <h2 class="magic-title">Magic <span class="logo-accent">Search</span></h2>
+            <p class="magic-subtitle rotating-subtitle" id="magic-rotating-subtitle">🎯 Find hashtags your competitors
+              haven't discovered yet</p>
 
-        <div class="magic-modal-header">
-          <div class="magic-icon-wrapper">
-            <div class="modal-icon">✨</div>
+            <div class="search-counter-badge" id="magic-counter-badge" style="display:none;">
+              <span class="counter-number" id="magic-counter-used">0</span>
+              <span class="counter-slash">/</span>
+              <span class="counter-total" id="magic-counter-total">6</span>
+              <span class="counter-label">searches used</span>
+            </div>
           </div>
-          <h2 class="magic-title">Magic <span class="logo-accent">Search</span></h2>
-          <p class="magic-subtitle rotating-subtitle" id="magic-rotating-subtitle">🎯 Find hashtags your competitors
-            haven't discovered yet</p>
 
-          <div class="search-counter-badge" id="magic-counter-badge" style="display:none;">
-            <span class="counter-number" id="magic-counter-used">0</span>
-            <span class="counter-slash">/</span>
-            <span class="counter-total" id="magic-counter-total">10</span>
-            <span class="counter-label">searches used</span>
-          </div>
-        </div>
+          <div class="magic-form">
+            <textarea id="magic-desc" placeholder="e.g. I make 5-minute gym workouts for busy moms..."
+              rows="3"></textarea>
 
-        <div class="magic-form">
-          <textarea id="magic-desc" placeholder="e.g. I make 5-minute gym workouts for busy moms..."
-            rows="3"></textarea>
+            <div class="form-row">
+              <div class="platform-select-wrapper" style="position:relative; flex: 1;">
+                <span class="dropdown-label">📱 Where are you posting?</span>
+                <select id="magic-platform">
+                  <!-- JS Populated -->
+                </select>
 
-          <div class="form-row">
-            <div class="platform-select-wrapper" style="position:relative; flex: 1;">
-              <span class="dropdown-label">📱 Where are you posting?</span>
-              <select id="magic-platform">
-                <!-- JS Populated -->
-              </select>
+                <div id="magic-upgrade-tooltip" class="upgrade-tooltip" style="display:none;">
+                  <button class="tooltip-close" id="magic-tooltip-close">&times;</button>
+                  <div class="tooltip-badge" id="magic-tooltip-badge">🔒 SPARK PLAN</div>
+                  <p class="tooltip-unlocks" id="magic-tooltip-unlocks">Unlocks <strong>Instagram + TikTok</strong>
+                    Magic
+                    Search</p>
+                  <p class="tooltip-tagline" id="magic-tooltip-tagline">Perfect for solo creators</p>
+                  <button class="tooltip-upgrade-btn" id="magic-tooltip-btn"
+                    onclick="document.getElementById('pricing-modal').classList.add('visible'); document.getElementById('magic-upgrade-tooltip').style.display='none';">Upgrade</button>
+                </div>
+              </div>
 
-              <div id="magic-upgrade-tooltip" class="upgrade-tooltip" style="display:none;">
-                <button class="tooltip-close" id="magic-tooltip-close">&times;</button>
-                <div class="tooltip-badge" id="magic-tooltip-badge">🔒 SPARK PLAN</div>
-                <p class="tooltip-unlocks" id="magic-tooltip-unlocks">Unlocks <strong>Instagram + TikTok</strong> Magic
-                  Search</p>
-                <p class="tooltip-tagline" id="magic-tooltip-tagline">Perfect for solo creators</p>
-                <button class="tooltip-upgrade-btn" id="magic-tooltip-btn"
-                  onclick="document.getElementById('pricing-modal').classList.add('visible'); document.getElementById('magic-upgrade-tooltip').style.display='none';">Upgrade</button>
+              <div style="flex: 1;">
+                <span class="dropdown-label">🎬 What's your format?</span>
+                <select id="magic-format">
+                  <option value="any">🎯 Any Format</option>
+                  <option value="reel">🎬 Reel / Short Video</option>
+                  <option value="post">🖼️ Static Post</option>
+                  <option value="carousel">📚 Carousel</option>
+                  <option value="story">⏱️ Story</option>
+                  <option value="live">🔴 Live Stream</option>
+                </select>
               </div>
             </div>
 
-            <div style="flex: 1;">
-              <span class="dropdown-label">🎬 What's your format?</span>
-              <select id="magic-format">
-                <option value="any">🎯 Any Format</option>
-                <option value="reel">🎬 Reel / Short Video</option>
-                <option value="post">🖼️ Static Post</option>
-                <option value="carousel">📚 Carousel</option>
-                <option value="story">⏱️ Story</option>
-                <option value="live">🔴 Live Stream</option>
-              </select>
-            </div>
-          </div>
 
-
-          <div class="form-row">
-            <div style="flex: 1;">
-              <span class="dropdown-label">👥 Who's watching?</span>
-              <select id="magic-audience">
-                <option value="broad">🌍 Broad Audience</option>
-                <option value="genz">💃 Gen Z (16-24)</option>
-                <option value="millennials">📱 Millennials</option>
-                <option value="b2b">💼 Professionals/B2B</option>
-                <option value="entrepreneurs">🚀 Entrepreneurs</option>
-                <option value="fitness">💪 Fitness/Health</option>
-                <option value="parents">👨‍👩‍👧 Parents</option>
-                <option value="students">🎓 Students</option>
-              </select>
-            </div>
-            <div style="flex: 1;">
-              <span class="dropdown-label">🎭 What's your vibe?</span>
-              <select id="magic-tone">
-                <option value="any">🎭 Any Tone</option>
-                <option value="educational">📚 Educational</option>
-                <option value="inspirational">✨ Inspirational</option>
-                <option value="humorous">😂 Humorous</option>
-                <option value="aesthetic">🌸 Aesthetic</option>
-                <option value="bold">🔥 Bold & Direct</option>
-                <option value="storytelling">📖 Storytelling</option>
-              </select>
-            </div>
-          </div>
-
-          <button class="modal-cta generate-btn" id="magic-submit-btn">
-            <div>✨ Generate My Strategy</div>
-            <span class="btn-sub" id="magic-btn-sub">Search 1 of 10</span>
-          </button>
-
-          <div id="magic-free-banner" class="free-tier-banner" style="display:none;">
-            <div class="banner-left">
-              <span class="banner-icon">🔒</span>
-              <div>
-                <strong>YouTube only on free plan</strong>
-                <p>Unlock Instagram + TikTok from $5/mo</p>
+            <div class="form-row">
+              <div style="flex: 1;">
+                <span class="dropdown-label">👥 Who's watching?</span>
+                <select id="magic-audience">
+                  <option value="broad">🌍 Broad Audience</option>
+                  <option value="genz">💃 Gen Z (16-24)</option>
+                  <option value="millennials">📱 Millennials</option>
+                  <option value="b2b">💼 Professionals/B2B</option>
+                  <option value="entrepreneurs">🚀 Entrepreneurs</option>
+                  <option value="fitness">💪 Fitness/Health</option>
+                  <option value="parents">👨‍👩‍👧 Parents</option>
+                  <option value="students">🎓 Students</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <span class="dropdown-label">🎭 What's your vibe?</span>
+                <select id="magic-tone">
+                  <option value="any">🎭 Any Tone</option>
+                  <option value="educational">📚 Educational</option>
+                  <option value="inspirational">✨ Inspirational</option>
+                  <option value="humorous">😂 Humorous</option>
+                  <option value="aesthetic">🌸 Aesthetic</option>
+                  <option value="bold">🔥 Bold & Direct</option>
+                  <option value="storytelling">📖 Storytelling</option>
+                </select>
               </div>
             </div>
-            <button class="banner-upgrade-btn"
-              onclick="document.getElementById('magic-modal').classList.remove('visible'); document.getElementById('pricing-modal').classList.add('visible');">Upgrade
-              →</button>
+
+            <button class="modal-cta generate-btn" id="magic-submit-btn">
+              <div>✨ Generate My Strategy</div>
+              <span class="btn-sub" id="magic-btn-sub">Search 1 of 6</span>
+            </button>
+
+            <div id="magic-free-banner" class="free-tier-banner" style="display:none;">
+              <div class="banner-left">
+                <span class="banner-icon">🔒</span>
+                <div>
+                  <strong>YouTube only on free plan</strong>
+                  <p>Unlock Instagram + TikTok from $5/mo</p>
+                </div>
+              </div>
+              <button class="banner-upgrade-btn"
+                onclick="document.getElementById('magic-modal').classList.remove('visible'); document.getElementById('pricing-modal').classList.add('visible');">Upgrade
+                →</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
     <!-- Pricing / Waitlist Modal -->
     <div class="modal-overlay" id="pricing-modal">
       <div class="modal" style="max-width: 900px; padding: 30px;">
@@ -509,7 +534,8 @@
             </div>
             <div id="profile-history-upgrade"
               style="display: none; padding: 12px; background: rgba(116, 59, 235, 0.1); border: 1px solid var(--accent); border-radius: 8px; margin-top: 12px; text-align: center;">
-              <p style="margin-bottom: 8px; color: var(--accent-light);">Unlock your full search history and analytics.
+              <p style="margin-bottom: 8px; color: var(--accent-light);">Unlock your full search history and
+                analytics.
               </p>
               <button class="modal-cta upgrade-btn" data-tier="creator" style="font-size: 12px; padding: 6px;"
                 onclick="document.getElementById('profile-modal').classList.remove('visible'); window.location.hash='#pricing'">Subscribe
@@ -533,7 +559,7 @@
       </div>
     </div>
   </div>
-  <div id="recaptcha-invisible" style="position: relative; z-index: 9999;"></div>
+  <div id="recaptcha-invisible" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999;"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js"></script>
   <script type="module" src="/src/main.js"></script>

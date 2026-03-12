@@ -159,11 +159,11 @@ function handleProfileUpdate(profile) {
         counterDiv.style.alignItems = 'center';
         counterDiv.style.gap = '8px';
 
-        const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+        const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
         const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
         const tierLabels = { spark: 'TRIAL', creator: '⭐ CREATOR', growth: '🚀 GROWTH', agency: '🏢 AGENCY' };
         const tier = profile.subscriptionTier || 'spark';
-        const maxLimit = limits[tier] ?? 10;
+        const maxLimit = limits[tier] ?? 6;
         const used = profile.searchesUsedThisMonth || 0;
         const tierColor = tierColors[tier] || '#9ca3af';
         const tierLabel = tierLabels[tier] || 'FREE';
@@ -202,9 +202,9 @@ function handleProfileUpdate(profile) {
 
 function canSearch() {
     if (currentUserProfile) {
-        const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+        const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
         const tier = currentUserProfile.subscriptionTier || 'spark';
-        const limit = limits[tier] ?? 10;
+        const limit = limits[tier] ?? 6;
         const used = currentUserProfile.searchesUsedThisMonth || 0;
         if (limit !== Infinity && used >= limit && !currentUserProfile.launchMode) {
             showUpgradePrompt();
@@ -546,13 +546,74 @@ function handleSearch(query) {
 }
 
 async function handleImageUpload(file) {
-    if (!currentUserProfile || !currentUserProfile.isPaidUser) {
-        document.getElementById('pricing-modal')?.classList.add('visible');
+    if (!currentUser) {
+        const authModal = document.getElementById('auth-modal');
+        if (authModal) authModal.classList.add('visible');
         return;
     }
 
-    alert('Image-to-Hashtag is launching very soon for subscribers! You will be notified when it is ready.');
+    const overlay = document.getElementById('image-overlay');
+    const preview = document.getElementById('image-preview');
+    const status = document.getElementById('image-status');
+    const tagsContainer = document.getElementById('image-tags');
+
+    if (!overlay || !preview || !status || !tagsContainer) return;
+
+    // Show overlay and preview
+    overlay.classList.add('visible');
+    preview.src = URL.createObjectURL(file);
+    status.textContent = '🔍 Analyzing image with AI...';
+    tagsContainer.innerHTML = '';
+
+    try {
+        const response = await imageToTag(file, state.currentPlatform);
+        
+        if (response.success && response.data) {
+            status.textContent = `✅ Found ${response.data.length} trending hashtags!`;
+            
+            tagsContainer.innerHTML = response.data.map(h => `
+                <div class="hashtag-pill" data-tag="${h.tag}" style="cursor: pointer; padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 20px; transition: all 0.2s;">
+                    <span style="font-size: 13px;">${h.tag}</span>
+                </div>
+            `).join('');
+
+            // Attach copy logic to pills
+            tagsContainer.querySelectorAll('.hashtag-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const tag = pill.getAttribute('data-tag');
+                    navigator.clipboard.writeText(tag);
+                    const originalBg = pill.style.background;
+                    pill.style.background = 'var(--success)';
+                    pill.style.borderColor = 'var(--success)';
+                    setTimeout(() => {
+                        pill.style.background = originalBg;
+                        pill.style.borderColor = 'var(--border)';
+                    }, 1000);
+                });
+            });
+
+            // Setup Copy All Button
+            const copyBtn = document.getElementById('copy-image-tags');
+            if (copyBtn) {
+                copyBtn.textContent = 'Copy All Tags';
+                copyBtn.onclick = () => {
+                    const allTags = response.data.map(h => h.tag).join(' ');
+                    navigator.clipboard.writeText(allTags);
+                    copyBtn.textContent = 'Copied! ✓';
+                    setTimeout(() => copyBtn.textContent = 'Copy All Tags', 2000);
+                };
+            }
+        } else if (response.error === 'COMING_SOON') {
+             status.textContent = '🚀 Image Search is coming soon for premium users!';
+        } else {
+            status.textContent = '❌ Analysis failed. Please try a clearer image.';
+        }
+    } catch (err) {
+        console.error('Image analysis failed:', err);
+        status.textContent = '⚠️ Service temporarily unavailable.';
+    }
 }
+
 
 const PLATFORM_TIERS = {
     'youtube': { name: 'YouTube', tier: 'free', emoji: '▶️', color: '#FF0000', unlockStr: 'YouTube only on free plan' },
@@ -574,10 +635,15 @@ function isPlatformUnlocked(platformKey, userTier) {
 }
 
 function initMagicModal() {
-    const magicBtn = document.getElementById('magic-btn');
+    const magicButtons = [
+        document.getElementById('magic-btn'),
+        document.getElementById('hero-magic-btn')
+    ];
     const overlay = document.getElementById('magic-modal');
     const closeBtn = document.getElementById('magic-modal-close');
     const submitBtn = document.getElementById('magic-submit-btn');
+    const descEl = document.getElementById('magic-desc');
+    const platformSelect = document.getElementById('magic-platform');
 
     const subtitleEl = document.getElementById('magic-rotating-subtitle');
     const SUBTITLES = [
@@ -599,7 +665,6 @@ function initMagicModal() {
         }, 150);
     }, 3000);
 
-    const descEl = document.getElementById('magic-desc');
     const PLACEHOLDERS = [
         "e.g. I make 5-minute gym workouts for busy moms...",
         "e.g. Street food travel vlogs in South India...",
@@ -615,7 +680,6 @@ function initMagicModal() {
         descEl.placeholder = PLACEHOLDERS[placeIdx];
     }, 4000);
 
-    const platformSelect = document.getElementById('magic-platform');
     let lastValidPlatform = 'youtube';
 
     platformSelect?.addEventListener('change', (e) => {
@@ -652,72 +716,73 @@ function initMagicModal() {
         document.getElementById('magic-upgrade-tooltip').style.display = 'none';
     });
 
-    magicBtn?.addEventListener('click', () => {
-        // Enforce limit on front-end before opening modal
-        let used = 0;
-        let maxLimit = 6;
-        const limitUsage = document.getElementById('limit-usage')?.textContent || '';
-        const limitMatched = limitUsage.match(/(\d+)\/(\d+|∞)/);
-        if (limitMatched) {
-            used = parseInt(limitMatched[1]);
-            maxLimit = limitMatched[2] === '∞' ? Infinity : parseInt(limitMatched[2]);
-            if (used >= maxLimit) {
-                document.getElementById('pricing-modal')?.classList.add('visible');
-                return;
+    magicButtons.forEach(btn => {
+        btn?.addEventListener('click', () => {
+            // Enforce limit on front-end before opening modal
+            let used = 0;
+            let maxLimit = 6;
+            const limitUsage = document.getElementById('limit-usage')?.textContent || '';
+            const limitMatched = limitUsage.match(/(\d+)\/(\d+|∞)/);
+            if (limitMatched) {
+                used = parseInt(limitMatched[1]);
+                maxLimit = limitMatched[2] === '∞' ? Infinity : parseInt(limitMatched[2]);
+                if (used >= maxLimit) {
+                    document.getElementById('pricing-modal')?.classList.add('visible');
+                    return;
+                }
             }
-        }
 
-        const userTier = currentUserProfile?.subscriptionTier || 'free';
+            const userTier = currentUserProfile?.subscriptionTier || 'free';
 
-        // Populate platforms
-        if (platformSelect) {
-            platformSelect.innerHTML = '';
-            Object.keys(PLATFORM_TIERS).forEach(key => {
-                const config = PLATFORM_TIERS[key];
-                const unlocked = isPlatformUnlocked(key, userTier);
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = `${unlocked ? '✅' : '🔒'} ${config.name}${unlocked ? '' : ` — ${config.tier.toUpperCase()} plan`}`;
-                if (!unlocked) opt.style.opacity = '0.5';
-                if (!unlocked) opt.disabled = true;
-                platformSelect.appendChild(opt);
-            });
-            // Try to set to last used if available, otherwise default to first unlocked
-            lastValidPlatform = isPlatformUnlocked(state.currentPlatform || 'youtube', userTier) ? (state.currentPlatform || 'youtube') : 'youtube';
-            platformSelect.value = lastValidPlatform;
-            document.getElementById('magic-upgrade-tooltip').style.display = 'none';
-        }
-
-
-        // Setup counter display
-        const cb = document.getElementById('magic-counter-badge');
-        if (cb) {
-            cb.style.display = 'inline-flex';
-            document.getElementById('magic-counter-used').textContent = used;
-            document.getElementById('magic-counter-total').textContent = maxLimit === Infinity ? '∞' : maxLimit;
-        }
-
-        // Free tier banner
-        const fb = document.getElementById('magic-free-banner');
-        if (fb) fb.style.display = (userTier === 'free' || !currentUserProfile) ? 'flex' : 'none';
-
-        // Update button subtext
-        const sub = document.getElementById('magic-btn-sub');
-        if (sub) {
-            sub.textContent = maxLimit === Infinity ? `Unlimited Searches left` : `Search ${used + 1} of ${maxLimit}`;
-        }
-
-        // Dynamic Button
-        if (submitBtn) {
-            submitBtn.classList.remove('urgent');
-            if (maxLimit !== Infinity && (maxLimit - used) <= 2) {
-                submitBtn.classList.add('urgent');
-                sub.textContent = `${maxLimit - used} left this month`;
+            // Populate platforms
+            if (platformSelect) {
+                platformSelect.innerHTML = '';
+                Object.keys(PLATFORM_TIERS).forEach(key => {
+                    const config = PLATFORM_TIERS[key];
+                    const unlocked = isPlatformUnlocked(key, userTier);
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = `${unlocked ? '✅' : '🔒'} ${config.name}${unlocked ? '' : ` — ${config.tier.toUpperCase()} plan`}`;
+                    if (!unlocked) opt.style.opacity = '0.5';
+                    if (!unlocked) opt.disabled = true;
+                    platformSelect.appendChild(opt);
+                });
+                // Try to set to last used if available, otherwise default to first unlocked
+                lastValidPlatform = isPlatformUnlocked(state.currentPlatform || 'youtube', userTier) ? (state.currentPlatform || 'youtube') : 'youtube';
+                platformSelect.value = lastValidPlatform;
+                document.getElementById('magic-upgrade-tooltip').style.display = 'none';
             }
-        }
 
-        overlay.classList.add('visible');
-        setTimeout(() => descEl?.focus(), 100);
+            // Setup counter display
+            const cb = document.getElementById('magic-counter-badge');
+            if (cb) {
+                cb.style.display = 'inline-flex';
+                document.getElementById('magic-counter-used').textContent = used;
+                document.getElementById('magic-counter-total').textContent = maxLimit === Infinity ? '∞' : maxLimit;
+            }
+
+            // Free tier banner
+            const fb = document.getElementById('magic-free-banner');
+            if (fb) fb.style.display = (userTier === 'free' || !currentUserProfile) ? 'flex' : 'none';
+
+            // Update button subtext
+            const sub = document.getElementById('magic-btn-sub');
+            if (sub) {
+                sub.textContent = maxLimit === Infinity ? `Unlimited Searches left` : `Search ${used + 1} of ${maxLimit}`;
+            }
+
+            // Dynamic Button
+            if (submitBtn) {
+                submitBtn.classList.remove('urgent');
+                if (maxLimit !== Infinity && (maxLimit - used) <= 2) {
+                    submitBtn.classList.add('urgent');
+                    if (sub) sub.textContent = `${maxLimit - used} left this month`;
+                }
+            }
+
+            overlay.classList.add('visible');
+            setTimeout(() => descEl?.focus(), 100);
+        });
     });
 
     closeBtn?.addEventListener('click', () => {
@@ -731,7 +796,7 @@ function initMagicModal() {
     });
 
     submitBtn?.addEventListener('click', () => {
-        const description = document.getElementById('magic-desc').value.trim();
+        const description = descEl?.value?.trim() || '';
         if (!description) {
             alert('Please describe your content');
             return;
@@ -739,7 +804,7 @@ function initMagicModal() {
 
         const payload = {
             content: description,
-            platform: document.getElementById('magic-platform').value,
+            platform: platformSelect.value,
             format: document.getElementById('magic-format').value,
             audience: document.getElementById('magic-audience').value,
             tone: document.getElementById('magic-tone').value

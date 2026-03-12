@@ -4,6 +4,8 @@ import { getTopHashtags, searchHashtags, getAllPlatforms } from '../services/has
 import { fetchYouTubeTrending, searchYouTubeHashtags, isYouTubeAvailable } from '../services/youtubeFetcher.js';
 import { isAIAvailable } from '../services/aiScoring.js';
 import { getRefreshCount } from '../services/scheduler.js';
+import { analyzeImage } from '../services/imageToTag.js';
+
 
 import { getCache, normalizeTopicKey, currentSlot } from '../lib/ai/cacheManager.js';
 import { getTrendContext } from '../lib/trends/trendAggregator.js';
@@ -78,7 +80,7 @@ router.get('/hashtags/:platform', async (req, res) => {
         const { platform } = req.params;
         const cache = await getCache();
         const slot = currentSlot();
-        const cacheKey = `${platform}_top100_slot${slot}`;
+        const cacheKey = `${platform}_top48_slot${slot}`;
 
         const cached = await cache.get(cacheKey);
         let hashtags = cached?.hashtags;
@@ -88,7 +90,7 @@ router.get('/hashtags/:platform', async (req, res) => {
 
             try {
                 if (platform === 'youtube' && isYouTubeAvailable()) {
-                    hashtags = await fetchYouTubeTrending(100);
+                    hashtags = await fetchYouTubeTrending(48);
                 } else if (process.env.AI_ENABLED === 'true') {
                     const trendContext = await getTrendContext(platform);
                     const result = await generateWithFallback(modelKey, platform, '', 'homepage_top100', trendContext);
@@ -99,7 +101,7 @@ router.get('/hashtags/:platform', async (req, res) => {
             }
 
             if (!hashtags || hashtags.length === 0) {
-                hashtags = getTopHashtags(platform, 100);
+                hashtags = getTopHashtags(platform, 48);
             }
 
             await cache.set(cacheKey, { hashtags }, parseInt(process.env.CACHE_TTL_HOURS) || 4);
@@ -138,11 +140,11 @@ router.get('/hashtags/:platform/search', async (req, res) => {
         if (!hashtags) {
             try {
                 if (platform === 'youtube' && isYouTubeAvailable()) {
-                    hashtags = await searchYouTubeHashtags(q, 30);
+                    hashtags = await searchYouTubeHashtags(q, 48);
                 } else if (process.env.AI_ENABLED === 'true') {
                     const trendContext = await getTrendContext(platform, q);
                     // Standard topic search uses Llama 3.3 per prompt
-                    const result = await generateWithFallback('llama-3.3', platform, q, 'topic_search_30', trendContext);
+                    const result = await generateWithFallback('llama-3.3', platform, q, 'topic_search_48', trendContext);
                     hashtags = normalizeHashtags(result.hashtags, 'ai');
                 }
             } catch (err) {
@@ -150,7 +152,7 @@ router.get('/hashtags/:platform/search', async (req, res) => {
             }
 
             if (!hashtags || hashtags.length === 0) {
-                hashtags = searchHashtags(platform, q, 30);
+                hashtags = searchHashtags(platform, q, 48);
             }
 
             await cache.set(cacheKey, { hashtags }, parseInt(process.env.CACHE_TTL_HOURS) || 4);
@@ -339,13 +341,28 @@ router.post('/hashtags/magic-search', async (req, res) => {
 });
 
 router.post('/hashtags/image-to-tag', upload.single('image'), async (req, res) => {
-    // V1 LAUNCH STATUS: Image processing gated. Vision API dormant.
-    return res.status(503).json({
-        success: false,
-        error: 'COMING_SOON',
-        message: 'Image upload launching soon for subscribers!'
-    });
+    try {
+        if (!req.file) return res.status(400).json({ success: false, error: 'No image provided' });
+        
+        const platform = req.body.platform || 'instagram';
+        console.log(`📸 Processing image for ${platform}...`);
+        
+        const hashtags = await analyzeImage(req.file.buffer, platform);
+        
+        res.json({
+            success: true,
+            data: hashtags,
+            platform,
+            count: hashtags.length,
+            source: hashtags[0]?.source || 'vision',
+            lastUpdated: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Image analysis route error:', error);
+        res.status(500).json({ success: false, error: 'Failed to analyze image' });
+    }
 });
+
 
 router.get('/status', (req, res) => {
     res.json({

@@ -39,7 +39,7 @@ This document tracks all planned, ongoing, and completed tasks for the Tagly AI 
 - [x] **Platform-Specific Hashtag Fidelity**: Remove mock/fallback tags for Instagram, Threads, X, Facebook, and Snapchat, connecting them to actual AI/API generation.
 - [x] **UI Polish & Status Texts**: Fix the hardcoded "▶️ YouTube Live" subtext to dynamically reflect the actively selected platform.
 - [x] **Finalize Premium/Subscription Display**: Ensure users can see pricing details and the trial flow before being forced into the auth modal.
-- [x] **Image-to-Tags (Vision API) Verification**: Ensure the camera upload button successfully maps to the Vision AI endpoint.
+- [x] **Image-to-Tags (Vision API) Verification**: Successfully implemented Gemini 1.5 Flash Vision for image analysis and wired it to the UI camera button.
 
 ## Objective: Phase 6 (AI Key Integration & Production Go-Live)
 
@@ -57,9 +57,12 @@ This document tracks all planned, ongoing, and completed tasks for the Tagly AI 
 - [x] **Test each model individually** → All live! (Qwen 122B + DeepSeek R1 + Groq)
 - [x] **Firebase Admin & Persistent Cache** → Shared initialization and Firestore caching logic implemented.
 - [ ] **Deploy updated `.env` to Render** → Add all new keys to Render Environment Variables dashboard
-- [ ] **Rebuild Android APK/AAB** → Run `npm run build` then Capacitor sync + Android Studio build
+- [x] **Rebuild Android APK/AAB** → Run `npm run build` then Capacitor sync + Android Studio build (Build verified, reCAPTCHA z-index fixed)
 - [x] **Monitor costs for first 48 hours** → Cost tracker in Firebase active
 - [x] **Firebase Auth Middleware** → Backend now verifies user identity for premium features.
 - [x] **Frontend ID Token Injection** → API client now sends tokens for Magic Search and Vision.
+- [x] **Firestore Cache Authentication Fix & Diagnostics** → Added robust quote stripping and diagnostic logging in `server/lib/firebaseAdmin.js` to eliminate `16 UNAUTHENTICATED` errors on Render.
+- [x] **Magic Search Modal UX Polish** → Fixed layout, scrolling, and close button based on urgent requirements.
+- [x] **Hero Logo Design Redesign** → Stacked logos in a dice-shape grid and restored the center button size.
 
 

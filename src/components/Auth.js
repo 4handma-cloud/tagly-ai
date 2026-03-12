@@ -197,10 +197,10 @@ export function initAuth(onProfileUpdate) {
             }
 
             const tier = currentUserProfile?.subscriptionTier || 'spark';
-            const limits = { spark: 10, creator: 100, growth: 500, agency: Infinity };
+            const limits = { spark: 6, creator: 100, growth: 500, agency: Infinity };
             const tierColors = { spark: '#9ca3af', creator: '#22c55e', growth: '#3b82f6', agency: '#a855f7' };
             const tierLabels = { spark: 'Trial', creator: '⭐ Creator', growth: '🚀 Growth', agency: '🏢 Agency' };
-            const maxLimit = limits[tier] ?? 10;
+            const maxLimit = limits[tier] ?? 6;
             const used = currentUserProfile?.searchesUsedThisMonth || 0;
             const displayLimit = maxLimit === Infinity ? '∞' : maxLimit;
             const tierColor = tierColors[tier] || '#9ca3af';
